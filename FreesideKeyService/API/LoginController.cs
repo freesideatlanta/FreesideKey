@@ -1,17 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Web.Http;
-using Microsoft.Owin;
-
-using FreesideKeyService.FSLocalDb;
-using System;
-using Newtonsoft.Json.Linq;
-using System.Net.Http.Headers;
-using System.Net.Http;
-
 using System.DirectoryServices.AccountManagement;
 using System.DirectoryServices.ActiveDirectory;
 
-using WGToolKit;
+using Newtonsoft.Json.Linq;
+
+using FreesideKeyService.FSLocalDb;
 
 namespace FreesideKeyService
 {
@@ -48,7 +42,7 @@ namespace FreesideKeyService
 
             //Validate Domain
             String joinedDomain = "";
-            try { joinedDomain = Domain.GetComputerDomain().Name; } catch (Exception e) { };
+            try { joinedDomain = Domain.GetComputerDomain().Name; } catch { };
 
             String localDomain = System.Environment.MachineName;
 

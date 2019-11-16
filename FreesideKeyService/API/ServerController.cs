@@ -1,16 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+
+using System.Collections.Generic;
 using System.Web.Http;
-using Microsoft.Owin;
+using Newtonsoft.Json.Linq;
 
 using FreesideKeyService.FSLocalDb;
-using System;
-using Newtonsoft.Json.Linq;
-using System.Net.Http.Headers;
-using System.Net.Http;
-
-using System.DirectoryServices.AccountManagement;
-using System.DirectoryServices.ActiveDirectory;
-
 using WGToolKit;
 
 namespace FreesideKeyService

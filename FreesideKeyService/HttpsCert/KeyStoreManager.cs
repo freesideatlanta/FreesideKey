@@ -1,26 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-
-using System.ComponentModel;
-using System.Configuration;
 
 using System.Net;
-using System.Net.Sockets;
 
-
-using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-
-
-using System.Diagnostics;
 
 
 namespace FreesideKeyService
@@ -37,9 +24,6 @@ namespace FreesideKeyService
         //private const int port = FSKeyCommon.Properties.Settings.Default.serverPort;
         public static bool SetupSSLCert()
         {
-            //Get Certificate From Embedded Resources
-            Assembly execAssembly = Assembly.GetExecutingAssembly();
-
             //Check For Existing Cert:
             X509Store store;
 

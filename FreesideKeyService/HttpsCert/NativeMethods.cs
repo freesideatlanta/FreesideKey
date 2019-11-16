@@ -5,12 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
-using Microsoft.Win32;
 
 namespace Microsoft.Web.Administration
 {

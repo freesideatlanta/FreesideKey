@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FreesideKeyServerTest", "Fr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "HostProjects", "HostProjects", "{08843337-7735-4A5D-AC53-2352390CF26A}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SupportLibs", "SupportLibs", "{A5C7961E-0BDA-41F6-82C0-ABFEF9DB3622}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MainPrograms", "MainPrograms", "{7C7E5CBF-4F4B-48CF-9CBB-E96BEE9A0364}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FreesideKeyService", "FreesideKeyService\FreesideKeyService.csproj", "{82677D89-9687-4C79-A3F1-24A25D8624AD}"

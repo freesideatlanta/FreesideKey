@@ -1,22 +1,19 @@
 ﻿
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web.Http;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Owin.FileSystems;
-using Microsoft.Owin.StaticFiles;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
-using Owin;
-
-using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Web.Http.Controllers;
+
+using System.Threading.Tasks;
+using System.Web.Http;
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+
+using Owin;
+
+
+
 
 namespace FreesideKeyService
 {
@@ -199,18 +196,6 @@ namespace FreesideKeyService
 
             appBuilder.UseCors(Microsoft.Owin.Cors.CorsOptions.AllowAll);
             appBuilder.UseWebApi(config);
-
-            //https redirect
-            appBuilder.Use(async (context, next) =>
-            {
-                if (context.Request.IsSecure)
-                    await next();
-                else
-                {
-                    var withHttps = "https://" + context.Request.Host + context.Request.Path;
-                    context.Response.Redirect(withHttps);
-                }
-            });
 
         }
     }

@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Reflection;
 
 using System.Security.Cryptography;
-
-using System.Threading;
 
 namespace FreesideKeyService.FSLocalDb
 {
