@@ -4,6 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+
+using FreesideKeyService;
+
+
 namespace FreesideKeyServerTest
 {
 
@@ -12,16 +16,16 @@ namespace FreesideKeyServerTest
         static void Main(string[] args)
         {
 
-         FreesideServerCore.FsKeySrvCore fsSrv = new FreesideServerCore.FsKeySrvCore();
+            FSKeyService FSKeyServer = new FSKeyService();
 
             Console.WriteLine("Starting Server Core...");
-            fsSrv.StartServer();
+            FSKeyServer.StartHook();
             Console.WriteLine("Server Core Started");
             Console.WriteLine("Press Any Key to Stop Server Core");
             Console.ReadKey();
             Console.WriteLine();
             Console.WriteLine("Server Core Stopping...");
-            fsSrv.StopServer();
+            FSKeyServer.StopHook();
             Console.WriteLine("Server Core Stopped");
             Console.WriteLine("Press Any Key to Exit");
             Console.ReadKey();

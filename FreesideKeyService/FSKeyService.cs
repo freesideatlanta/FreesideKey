@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -7,80 +8,67 @@ using System.Linq;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
-using System.IO.MemoryMappedFiles;
-using System.Xml.Serialization;
-using Microsoft.Win32;
+using Microsoft.Owin.Hosting;
 
 namespace FreesideKeyService
 {
     public partial class FSKeyService : ServiceBase
     {
-        
-        private Thread serviceThread;
-        private bool stopService; //Stop service flag
-
-        private bool serverInit; //signals Server is ready to respond to client requests
-
-
-
-
-        private string APIKey;
+        private IDisposable _server = null;
 
         public FSKeyService()
         {
             InitializeComponent();
-            stopService = false;
-            serviceThread = new Thread(mainProcess);
+        }
+
+        //Hooks For Testing Without Installing as a Service
+        public void StartHook()
+        {
+            OnStart(null);
+        }
+        public void StopHook()
+        {
+            OnStop();
         }
 
         protected override void OnStart(string[] args)
         {
-            serviceThread.Start();
+            //Setup Port For SSL;
+            if (!SSLKeyManager.SetupSSLCert())
+            {
+                //TODO: Do Some Logging Here on Failure;
+                OnStop();
+                return;
+            }
+
+            //Validate/Initialize Database
+            String ErrorMsg;
+            //Check For Valid DataBase
+            if(!FSLocalDb.KeyDbManager.ValidateDB(out ErrorMsg))
+                if (FSLocalDb.KeyDbManager.DeleteDB(out ErrorMsg))      //Delete Invalid Database. Bit Extreme, but we don't have old DB versions to support. Someone has messed with the DB file.
+                    if (FSLocalDb.KeyDbManager.CreateDB(out ErrorMsg))  //Create New Database
+                        FSLocalDb.KeyDbManager.InitDB(out ErrorMsg);    //Initialize New Databse
+
+
+            
+
+            //Start WebApp
+            StartOptions options = new StartOptions();
+            options.Urls.Add($"https://*:{FSKeyCommon.Properties.Settings.Default.serverPort}/");
+
+
+            _server = WebApp.Start<Startup>(options);
+            
         }
 
         protected override void OnStop()
         {
-            stopService = true;
-            serviceThread.Join(500);
-            serviceThread.Abort();
+            if (_server != null)
+            {
+                _server.Dispose();
+            }
+            base.OnStop();
         }
 
-
-        //Listen on Named Pipe for 
-        private void IPCClientListener(object Data)
-        {
-
-        }
-
-        private void IPCClientHandler(object Data)
-        {
-            //Message Pump
-            //Read in struct. Copy to Local. Write Out Struct
-            MemoryMappedFile ipcFile = MemoryMappedFile.OpenExisting(FSKeyIPCComm.FSIPCConsensus.IPCFile.ToString()+"Client", 4096, MemoryMappedFileAccess.ReadWrite);
-        }
-
-        private void IPCServerStatus(object Data)
-        {
-
-        }
-
-
-        private void mainProcess(object Data)
-        {
-            //Initialization
-            
-            //try and load API key
-            APIKey = (String) Registry.LocalMachine.GetValue("SOFTWARE\\FSKeyMon", "APIkey");
-
-            Thread ClientThread = new Thread(IPCClientHandler);
-            Thread ServerThread = new Thread(IPCServerStatus);
-
-
-                
-
-
-
-        }
     }
 }

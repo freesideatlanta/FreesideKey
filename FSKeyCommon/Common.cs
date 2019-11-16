@@ -6,22 +6,12 @@ using System.Threading.Tasks;
 
 
 namespace FSKeyCommon
-{
-    public class Settings
-    {
-        public const int serverPort = 38423;
-        public const String serviceName = "FsKeyServ";
-    }
+{  
 
     public enum FSCommand
     {
         setApi,
         getServerStatus,
     }
-    public class Message
-    {
-        
 
-
-    }
 }

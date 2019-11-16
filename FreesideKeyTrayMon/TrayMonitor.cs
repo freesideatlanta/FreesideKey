@@ -43,11 +43,10 @@ namespace FreesideKeyTrayMon
         private void ServiceMonitor(object Data)
         {
             ServiceController sc = ServiceController.GetServices()
-                   .FirstOrDefault(s => s.ServiceName == FSKeyCommon.Settings.serviceName);
+                   .FirstOrDefault(s => s.ServiceName == FSKeyCommon.Properties.Settings.Default.serviceName);
 
             while (!stopMonitor)
             {
-
                 //Check Service Installed
                 if (sc == null)
                 {
@@ -186,7 +185,7 @@ namespace FreesideKeyTrayMon
         {
             //Get Handle to Service
             ServiceController sc = ServiceController.GetServices()
-               .FirstOrDefault(s => s.ServiceName == FSKeyCommon.Settings.serviceName);
+               .FirstOrDefault(s => s.ServiceName == FSKeyCommon.Properties.Settings.Default.serviceName);
             if (sc == null)
             {
                 serviceStatus = ServiceStatus.kNotInstalled;
@@ -200,7 +199,7 @@ namespace FreesideKeyTrayMon
         {
             //Get Handle to Service
             ServiceController sc = ServiceController.GetServices()
-               .FirstOrDefault(s => s.ServiceName == FSKeyCommon.Settings.serviceName);
+               .FirstOrDefault(s => s.ServiceName == FSKeyCommon.Properties.Settings.Default.serviceName);
             if (sc == null)
             {
                 serviceStatus = ServiceStatus.kNotInstalled;
@@ -218,7 +217,7 @@ namespace FreesideKeyTrayMon
         {
             //Get Handle to Service
             ServiceController sc = ServiceController.GetServices()
-               .FirstOrDefault(s => s.ServiceName == FSKeyCommon.Settings.serviceName);
+               .FirstOrDefault(s => s.ServiceName == FSKeyCommon.Properties.Settings.Default.serviceName);
             if (sc == null)
             {
                 serviceStatus = ServiceStatus.kNotInstalled;

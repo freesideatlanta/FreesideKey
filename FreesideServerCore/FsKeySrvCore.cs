@@ -1,134 +1,147 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
-using Microsoft.Win32;
-using System.Net.Sockets;
-using System.Net;
-using System.Runtime.Serialization;
-using Newtonsoft.Json;
-using System.Dynamic;
+
+using Microsoft.Owin.SelfHost;
+
+
 
 namespace FreesideServerCore
 {
-    public class FsKeySrvCore
-    {
-        private Thread mainThread; //Main Program Thread
-        private Thread clientListener; //Client Listener Thread (Listen All Connections)
-        
-        private bool stopServerFlag = false;
 
-        private String ApricotAPIKey = null;
 
+    private static readonly HttpListener KeySrvListener;
+        private static bool _stopServer = false;
+        private static Task _mainProc;
+
+        private static string GenApiKey()
+        {
+            return "267c3aa9-78e7-4579-b26e-c679cdd594fc";
+
+        }
+
+        static FsKeySrvCore()
+        {
+
+            KeySrvListener = new HttpListener();
+            KeySrvListener.Prefixes.Add($"http://localhost:{FSKeyCommon.Properties.Settings.Default.serverPort}/");
+
+        }
         public void StartServer()
         {
-            stopServerFlag = false;
-            mainThread = new Thread(mainProc);
-            mainThread.Start();
+            if (_mainProc != null && !_mainProc.IsCompleted) return; //Already started
+            _mainProc = mainProc();
 
             return;
         }
         public void StopServer()
         {
+            _stopServer = true;
+            lock (KeySrvListener)
+            {
+                //Use a lock so we don't kill a request that's currently being processed
+                KeySrvListener.Stop();
+            }
+            try
+            {
+                _mainProc.Wait();
+            }
+            catch { /* je ne care pas */ }
 
-            stopServerFlag = true;
-            mainThread.Join(1000);
-            mainThread.Abort();
 
             return;
         }
 
-        public void mainProc(object Data)
+        private static async Task mainProc()
         {
-            //Initialization
-            
-
-            //Load API Key from Registry
-            ApricotAPIKey = (String) Properties.Settings.Default["ApricotAPIKey"];
-
-            //Start Client Listener for TrayMonitor Program Connection
-            clientListener = new Thread(clientListenerProc);
-            while (!stopServerFlag)
+            KeySrvListener.Start();
+            while (!_stopServer)
             {
-                Thread.Sleep(100);
-            }
-
-        }
-
-        //Listen for new TrayClient Connections
-        private List<Thread> clientHandlerList; //Client Handler Thread (Per Client)
-        public void clientListenerProc(object Data)
-        {
-            clientHandlerList = new List<Thread>();
-            TcpListener server = new TcpListener(IPAddress.Any, FSKeyCommon.Settings.serverPort);
-
-            server.Start();
-
-            while (!stopServerFlag)
-            {
-                if (server.Pending())
+                try
                 {
-                    Socket s = server.AcceptSocket();
-                    clientHandlerList.Add(new Thread(() => clientHandlerProc(s)));
-                }
-
-                //Purge Copmpleted Threads
-                foreach (Thread t in clientHandlerList)
-                    if (!t.IsAlive)
-                        clientHandlerList.Remove(t);
-            }
-
-            //Wait for all clientHandlers to exit before exiting Thread
-            foreach (Thread t in clientHandlerList)
-            {
-                t.Join(250);
-                t.Abort();
-            }
-
-            clientHandlerList.Clear();
-
-            return;
-        }
-
-        public void clientHandlerProc(Socket socket)
-        {
-            byte[] buffer = new byte[1024];
-            while(!stopServerFlag)
-            {
-                if(socket.Available > 0)
-                {
-                    socket.Receive(buffer);
-                    string sData = Encoding.ASCII.GetString(buffer);
-
-                    dynamic jData = Newtonsoft.Json.Linq.JObject.Parse(sData);
-
-                    switch((String) jData.cmd)
+                    //GetContextAsync() returns when a new request come in
+                    var context = await KeySrvListener.GetContextAsync();
+                    lock (KeySrvListener)
                     {
-                        case "setAPIKey":
-                            ApricotAPIKey = (String) jData.ApricotAPIKey;
-                            Properties.Settings.Default["ApricotAPIKey"] = ApricotAPIKey;
-                            Properties.Settings.Default.Save();
-                            break;
-                        case "getAPIKey":
-                            dynamic sendData = new ExpandoObject();
-                            sendData.cmd = "getApiKeyResp";
-                            sendData.ApricotAPIKey = ApricotAPIKey;
-
-                            string sendString = Newtonsoft.Json.JsonConvert.SerializeObject(sendData);
-                            socket.Send(Encoding.ASCII.GetBytes(sendString));
-
-                            break;
+                        if (!_stopServer) ProcessRequest(context);
                     }
                 }
-
-                Thread.Sleep(100);
+                catch (Exception e)
+                {
+                    if (e is HttpListenerException) return; //this gets thrown when the listener is stopped
+                    //TODO: Log the exception
+                }
             }
-
-            return;
-            
         }
 
+
+        private static void ProcessRequest(HttpListenerContext context)
+        {
+            using (var response = context.Response)
+            {
+                try
+                {
+                    var handled = false;
+                    switch (context.Request.Url.AbsolutePath)
+                    {
+                        //This is where we do different things depending on the URL
+                        //TODO: Add cases for each URL we want to respond to
+                        case "/settings":
+                            switch (context.Request.HttpMethod)
+                            {
+                                case "GET":
+                                    //Get the current settings
+                                    response.ContentType = "application/json";
+
+                                    //This is what we want to send back
+                                    var responseBody = JsonConvert.SerializeObject(MyApplicationSettings);
+
+                                    //Write it to the response stream
+                                    var buffer = Encoding.UTF8.GetBytes(responseBody);
+                                    response.ContentLength64 = buffer.Length;
+                                    response.OutputStream.Write(buffer, 0, buffer.Length);
+                                    handled = true;
+                                    break;
+
+                                case "PUT":
+                                    //Update the settings
+                                    using (var body = context.Request.InputStream)
+                                    using (var reader = new StreamReader(body, context.Request.ContentEncoding))
+                                    {
+                                        //Get the data that was sent to us
+                                        var json = reader.ReadToEnd();
+
+                                        //Use it to update our settings
+                                        UpdateSettings(JsonConvert.DeserializeObject<MySettings>(json));
+
+                                        //Return 204 No Content to say we did it successfully
+                                        response.StatusCode = 204;
+                                        handled = true;
+                                    }
+                                    break;
+                            }
+                            break;
+                    }
+                    if (!handled)
+                    {
+                        response.StatusCode = 404;
+                    }
+                }
+                catch (Exception e)
+                {
+                    //Return the exception details the client - you may or may not want to do this
+                    response.StatusCode = 500;
+                    response.ContentType = "application/json";
+                    var buffer = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(e));
+                    response.ContentLength64 = buffer.Length;
+                    response.OutputStream.Write(buffer, 0, buffer.Length);
+
+                    //TODO: Log the exception
+                }
+            }
+        }
     }
 }
