@@ -59,15 +59,17 @@ namespace FreesideKeyService.FSLocalDb
                         cmd.ExecuteNonQuery();
                         connection.Close();
 
-                        
+
 
                     }
                     catch (Exception e)
                     {
-                        try {
+                        try
+                        {
                             File.Delete(DB_FILE);
                             return true;
-                        } catch (Exception ex) { }
+                        }
+                        catch { }
 
                         ErrorMsg = $"DB File Disconnect Failed. Reason: {e.Message}";
                         return false;
@@ -79,7 +81,8 @@ namespace FreesideKeyService.FSLocalDb
                 //Delete Log File
                 if (File.Exists(LOG_FILE))
                     File.Delete(LOG_FILE);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 ErrorMsg = $"Delete File Failed. Reason: {e.Message}";
                 return false;
@@ -123,11 +126,13 @@ namespace FreesideKeyService.FSLocalDb
                 }
 
                 //Create DB 
-                cmd.CommandText = $"CREATE DATABASE {DB_NAME} ON (NAME = N'{DB_NAME}', FILENAME = '{DB_FILE}')";
+                cmd.CommandText = $"CREATE DATABASE {DB_NAME} ON(NAME = N'{DB_NAME}', FILENAME = '{DB_FILE}'";
+
                 cmd.ExecuteNonQuery();
 
                 connection.Close();
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 ErrorMsg = $"CreateDB Failed. Reason: {e.Message}";
                 return false;
@@ -185,9 +190,9 @@ namespace FreesideKeyService.FSLocalDb
                 cmd.ExecuteNonQuery();
 
                 //Group Door Permissions Table
-                cmd.CommandText = @"CREATE TABLE dbo.GroupPerms (  GroupPermKey int IDENTITY(1,1) PRIMARY KEY,
-	                                                               GroupKey int NOT NULL,
-                                                                   DoorKey int NOT NULL    
+                cmd.CommandText = @"CREATE TABLE dbo.GroupPerms (  GroupKey int NOT NULL,
+                                                                   ControllerSN int NOT NULL,
+                                                                   DoorIndex int NOT NULL,
 	                                                            )  ON [PRIMARY]";
                 cmd.ExecuteNonQuery();
 
@@ -210,6 +215,7 @@ namespace FreesideKeyService.FSLocalDb
 
 
 #if !_DEBUG
+
                 cmd.CommandText = $"INSERT INTO dbo.ApiKeys ( UserName, UserSID, TokenID, ApiToken ) VALUES ( 'DebugUser', 'DebugSid', 'UserToken', 'AB04493ED7582865B5D31C9B02C315BD5AAA4CE0FBC4CE38BEC1739142412E70' )";
                 cmd.ExecuteNonQuery();
 #endif
@@ -229,7 +235,7 @@ namespace FreesideKeyService.FSLocalDb
             public String TableName;
             public String ColumnName;
             public String DataType;
-            public Int32  CharMaxLength;
+            public Int32 CharMaxLength;
 
             public ValidateDbResult(String TableName, String ColumnName, String DataType, Int32 CharMaxLength)
             {
@@ -265,23 +271,27 @@ namespace FreesideKeyService.FSLocalDb
 
                 List<ValidateDbResult> validateResults = new List<ValidateDbResult>();
 
-                while(rdr.Read())
+                while (rdr.Read())
                 {
                     ValidateDbResult result = new ValidateDbResult();
                     result.TableName = rdr.GetString(0);
                     result.ColumnName = rdr.GetString(1);
                     result.DataType = rdr.GetString(2);
 
-                    
-                    result.CharMaxLength = rdr.IsDBNull(3)? -1 : rdr.GetInt32(3);
+
+                    result.CharMaxLength = rdr.IsDBNull(3) ? -1 : rdr.GetInt32(3);
 
                     validateResults.Add(result);
                 }
 
+                rdr.Close();
+                connection.Close();
 
                 List<ValidateDbResult> checkData = new List<ValidateDbResult>();
+
+
                 //API Keys Table
-                checkData.Add(new ValidateDbResult("ApiKeys", "ApiKey", "int", -1));            
+                checkData.Add(new ValidateDbResult("ApiKeys", "ApiKey", "int", -1));
                 checkData.Add(new ValidateDbResult("ApiKeys", "UserName", "varchar", 64));
                 checkData.Add(new ValidateDbResult("ApiKeys", "UserSID", "varchar", 64));
                 checkData.Add(new ValidateDbResult("ApiKeys", "TokenID", "varchar", 64));
@@ -295,9 +305,9 @@ namespace FreesideKeyService.FSLocalDb
                 checkData.Add(new ValidateDbResult("Controllers", "Door4Name", "varchar", 64));
                 checkData.Add(new ValidateDbResult("Groups", "GroupKey", "int", -1));
                 checkData.Add(new ValidateDbResult("Groups", "GroupName", "varchar", 64));
-                checkData.Add(new ValidateDbResult("GroupPerms", "GroupPermKey", "int", -1));
                 checkData.Add(new ValidateDbResult("GroupPerms", "GroupKey", "int", -1));
-                checkData.Add(new ValidateDbResult("GroupPerms", "DoorKey", "int", -1));
+                checkData.Add(new ValidateDbResult("GroupPerms", "ControllerSN", "int", -1));
+                checkData.Add(new ValidateDbResult("GroupPerms", "DoorIndex", "int", -1));
                 checkData.Add(new ValidateDbResult("Users", "UserKey", "int", -1));
                 checkData.Add(new ValidateDbResult("Users", "UserName", "varchar", 64));
                 checkData.Add(new ValidateDbResult("Users", "CardID", "int", -1));
@@ -306,20 +316,14 @@ namespace FreesideKeyService.FSLocalDb
                 checkData.Add(new ValidateDbResult("GroupMembership", "UserKey", "int", -1));
                 checkData.Add(new ValidateDbResult("GroupMembership", "GroupKey", "int", -1));
 
-                foreach(ValidateDbResult r in checkData)
+                foreach (ValidateDbResult r in checkData)
                 {
-                    if (!validateResults.Contains(r)) 
-                    { 
+                    if (!validateResults.Contains(r))
+                    {
                         ErrorMsg = "Validate Failed: " + checkData.ToString();
-                        rdr.Close();
-                        connection.Close();
-                        return false; 
-                    };
+                        return false;
+                    }
                 }
-
-                rdr.Close();
-                connection.Close();
-
             }
             catch (Exception e)
             {
@@ -339,7 +343,7 @@ namespace FreesideKeyService.FSLocalDb
             public String tokenId;
             public String apiToken;
 
-            public TokenResponse(String _userName, String _userSID,  String _tokenID, String _apiToken)
+            public TokenResponse(String _userName, String _userSID, String _tokenID, String _apiToken)
             {
                 userName = _userName;
                 userSID = _userSID;
@@ -363,16 +367,24 @@ namespace FreesideKeyService.FSLocalDb
             {
                 SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
                 connection.Open();
-                SqlCommand cmd = connection.CreateCommand();
+                SqlCommand cmd;
 
-                cmd.CommandText = $"SELECT COUNT(*) FROM dbo.ApiKeys WHERE TokenID = '{TokenID}'";
+                cmd = new SqlCommand(@"SELECT COUNT(*) FROM dbo.ApiKeys WHERE TokenID = @TokenID", connection);
+                cmd.Parameters.Add(new SqlParameter("TokenID", TokenID));
+
                 Int32 count = (Int32)cmd.ExecuteScalar();
                 if (count > 0)
                 {
                     ErrorMsg = $"CreateAPIKey Failed. TokenID already Exists";
                     return null;
                 }
-                cmd.CommandText = $"INSERT INTO dbo.ApiKeys ( UserName, UserSID, TokenID, ApiToken ) VALUES ( '{UserName}', '{UserSID}', '{TokenID}', '{tokenBytesString}' )";
+                cmd = new SqlCommand(@"INSERT INTO dbo.ApiKeys ( UserName, UserSID, TokenID, ApiToken )
+                                              VALUES ( @UserName, @UserSID, @TokenID, @tokenBytesString )", connection);
+                cmd.Parameters.Add(new SqlParameter("UserName", UserName));
+                cmd.Parameters.Add(new SqlParameter("UserSID", UserSID));
+                cmd.Parameters.Add(new SqlParameter("TokenID", TokenID));
+                cmd.Parameters.Add(new SqlParameter("tokenBytesString", tokenBytesString));
+
                 cmd.ExecuteNonQuery();
 
                 connection.Close();
@@ -393,10 +405,12 @@ namespace FreesideKeyService.FSLocalDb
             {
                 SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
                 connection.Open();
-                SqlCommand cmd = connection.CreateCommand();
+                SqlCommand cmd;
 
                 //See If Token Exists
-                cmd.CommandText = $"SELECT UserName, UserSID, TokenID, ApiToken FROM dbo.ApiKeys WHERE ApiToken = '{apiToken}'";
+                cmd = new SqlCommand(@"SELECT UserName, UserSID, TokenID, ApiToken FROM dbo.ApiKeys WHERE ApiToken = @apiToken", connection);
+                cmd.Parameters.Add(new SqlParameter("apiToken", apiToken));
+
                 SqlDataReader r = cmd.ExecuteReader();
 
                 if (!r.Read())
@@ -410,14 +424,17 @@ namespace FreesideKeyService.FSLocalDb
                 r.Close();
 
                 //Delete Token
-                cmd.CommandText = $"DELETE FROM dbo.ApiKeys WHERE ApiToken = '{apiToken}'";
+                cmd = new SqlCommand(@"DELETE FROM dbo.ApiKeys WHERE ApiToken = @apiToken", connection);
+                cmd.Parameters.Add(new SqlParameter("apiToken", apiToken));
+
+
                 cmd.ExecuteNonQuery();
 
                 connection.Close();
 
                 return resp;
 
-                
+
             }
             catch (Exception e)
             {
@@ -425,7 +442,7 @@ namespace FreesideKeyService.FSLocalDb
                 return null;
             }
 
-            
+
         }
 
 
@@ -444,7 +461,7 @@ namespace FreesideKeyService.FSLocalDb
                 cmd.CommandText = $"SELECT UserName, UserSID, TokenID, ApiToken FROM dbo.ApiKeys WHERE TokenID <> 'UserToken' ";
                 SqlDataReader r = cmd.ExecuteReader();
 
-                while(r.Read())
+                while (r.Read())
                     apiKeyList.Add(new TokenResponse(r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3)));
 
                 r.Close();
@@ -471,17 +488,19 @@ namespace FreesideKeyService.FSLocalDb
             {
                 SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
                 connection.Open();
-                SqlCommand cmd = connection.CreateCommand();
+                SqlCommand cmd;
 
                 //Get ApiToken Tokens
-                cmd.CommandText = $"SELECT UserName, UserSID, TokenID, ApiToken FROM dbo.ApiKeys WHERE ApiToken = '{apiToken}'";
+                cmd = new SqlCommand(@"SELECT UserName, UserSID, TokenID, ApiToken FROM dbo.ApiKeys WHERE ApiToken = @apiToken", connection);
+                cmd.Parameters.Add(new SqlParameter("apiToken", apiToken));
+
                 SqlDataReader r = cmd.ExecuteReader();
 
                 TokenResponse resp = null;
                 while (r.Read())
                     resp = new TokenResponse(r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3));
 
-                if(resp == null)
+                if (resp == null)
                 {
                     ErrorMsg = "Api Key Not Found";
                     return null;
@@ -501,7 +520,7 @@ namespace FreesideKeyService.FSLocalDb
 
 
 
- 
+
         public static TokenResponse GetApiToken(String UserName, String SID, out String ErrorMsg)
         {
             ErrorMsg = null;
@@ -509,24 +528,26 @@ namespace FreesideKeyService.FSLocalDb
             {
                 SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
                 connection.Open();
-                SqlCommand cmd = connection.CreateCommand();
+                SqlCommand cmd;
 
-                
+
 
                 //Get Existing Token If Available
-                cmd.CommandText = $"SELECT UserName, UserSID, TokenID, ApiToken FROM dbo.ApiKeys WHERE TokenID='UserToken' AND UserSID='{SID}'";
-                SqlDataReader r = cmd.ExecuteReader();
+                cmd = new SqlCommand(@"SELECT UserName, UserSID, TokenID, ApiToken FROM dbo.ApiKeys WHERE TokenID='UserToken' AND UserSID=@SID", connection);
+                cmd.Parameters.Add(new SqlParameter("SID", SID));
+
+                SqlDataReader rdr = cmd.ExecuteReader();
 
 
-                
-                if(r.Read())
+
+                if (rdr.Read())
                 {
-                    TokenResponse resp = new TokenResponse(r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3));
-                    r.Close();
+                    TokenResponse resp = new TokenResponse(rdr.GetString(0), rdr.GetString(1), rdr.GetString(2), rdr.GetString(3));
+                    rdr.Close();
                     return resp;
                 }
 
-                r.Close();
+                rdr.Close();
 
                 //Generate New Token if Not AvailableByte[] tokenBytes = new Byte[32];
                 RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
@@ -535,11 +556,15 @@ namespace FreesideKeyService.FSLocalDb
                 rng.GetBytes(tokenBytes);
                 String tokenBytesString = BitConverter.ToString(tokenBytes).Replace("-", "");
 
-                cmd.CommandText = $"INSERT INTO dbo.ApiKeys ( UserName, UserSID, TokenID, ApiToken ) VALUES ( '{UserName}', '{SID}', 'UserToken', '{tokenBytesString}' )";
+                cmd = new SqlCommand(@"INSERT INTO dbo.ApiKeys ( UserName, UserSID, TokenID, ApiToken )
+                                            VALUES ( @UserName, @SID, 'UserToken', @tokenBytesString )", connection);
+
+                cmd.Parameters.Add(new SqlParameter("UserName", UserName));
+                cmd.Parameters.Add(new SqlParameter("SID", SID));
+                cmd.Parameters.Add(new SqlParameter("tokenBytesString", tokenBytesString));
+
+
                 cmd.ExecuteNonQuery();
-
-                r.Close();
-
                 connection.Close();
 
                 return new TokenResponse(UserName, SID, "UserToken", tokenBytesString);
@@ -563,20 +588,31 @@ namespace FreesideKeyService.FSLocalDb
             {
                 SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
                 connection.Open();
-                SqlCommand cmd = connection.CreateCommand();
+                SqlCommand cmd;
 
 
                 //Check if Controller already exists
-                cmd.CommandText = $"SELECT COUNT(*) FROM dbo.Controllers WHERE ControllerSN = {controllerSerial}";
-                Int32 controllerCount = (Int32) cmd.ExecuteScalar();
+                cmd = new SqlCommand(@"SELECT COUNT(*) FROM dbo.Controllers WHERE ControllerSN = @controllerSerial", connection);
+                cmd.Parameters.Add(new SqlParameter("controllerSerial", (Int32)controllerSerial));
 
-                if(controllerCount > 0)
+                Int32 controllerCount = (Int32)cmd.ExecuteScalar();
+
+                if (controllerCount > 0)
                 {
                     ErrorMsg = "Controller Already Added";
                     return false;
                 }
 
-                cmd.CommandText = $"INSERT INTO dbo.Controllers ( ControllerName, ControllerSN, Door1Name, Door2Name, Door3Name, Door4Name ) VALUES ( '{controllerName}','{controllerSerial}', '{door1Name}','{door2Name}','{door3Name}','{door4Name}')";
+                cmd = new SqlCommand(@"INSERT INTO dbo.Controllers ( ControllerName, ControllerSN, Door1Name, Door2Name, Door3Name, Door4Name ) 
+                                        VALUES ( @controllerName,@controllerSerial, @door1Name,@door2Name,@door3Name,@door4Name)", connection);
+
+                cmd.Parameters.Add(new SqlParameter("controllerName", controllerName));
+                cmd.Parameters.Add(new SqlParameter("controllerSerial", (Int32)controllerSerial));
+                cmd.Parameters.Add(new SqlParameter("door1Name", door1Name));
+                cmd.Parameters.Add(new SqlParameter("door2Name", door2Name));
+                cmd.Parameters.Add(new SqlParameter("door3Name", door3Name));
+                cmd.Parameters.Add(new SqlParameter("door4Name", door4Name));
+
                 cmd.ExecuteNonQuery();
 
                 connection.Close();
@@ -599,11 +635,13 @@ namespace FreesideKeyService.FSLocalDb
             {
                 SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
                 connection.Open();
-                SqlCommand cmd = connection.CreateCommand();
+                SqlCommand cmd;
 
 
                 //Check if Controller already exists
-                cmd.CommandText = $"SELECT COUNT(*) FROM dbo.Controllers WHERE ControllerSN = {controllerSerial}";
+                cmd = new SqlCommand(@"SELECT COUNT(*) FROM dbo.Controllers WHERE ControllerSN = @controllerSerial", connection);
+                cmd.Parameters.Add(new SqlParameter("controllerSerial", (Int32)controllerSerial));
+
                 Int32 controllerCount = (Int32)cmd.ExecuteScalar();
 
                 if (controllerCount == 0)
@@ -611,8 +649,9 @@ namespace FreesideKeyService.FSLocalDb
                     ErrorMsg = "Controller Doesn't Exist";
                     return false;
                 }
+                cmd = new SqlCommand(@"DELETE FROM dbo.Controllers WHERE ControllerSN = @controllerSerial", connection);
+                cmd.Parameters.Add(new SqlParameter("controllerSerial", (Int32)controllerSerial));
 
-                cmd.CommandText = $"DELETE FROM dbo.Controllers WHERE ControllerSN = '{controllerSerial}'";
                 cmd.ExecuteNonQuery();
 
                 connection.Close();
@@ -635,25 +674,34 @@ namespace FreesideKeyService.FSLocalDb
             {
                 SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
                 connection.Open();
-                SqlCommand cmd = connection.CreateCommand();
+                SqlCommand cmd;
 
 
                 //Check if Controller already exists
-                cmd.CommandText = $"SELECT COUNT(*) FROM dbo.Controllers WHERE ControllerSN = '{controllerSerial}'";
-                Int32 controllerCount = (Int32)cmd.ExecuteScalar();
+                cmd = new SqlCommand(@"SELECT COUNT(*) FROM dbo.Controllers WHERE ControllerSN = @controllerSerial", connection);
 
-                if (controllerCount <= 0)
+                cmd.Parameters.Add(new SqlParameter("controllerSerial", (Int32)controllerSerial));
+
+                if ((Int32)cmd.ExecuteScalar() <= 0)
                 {
                     ErrorMsg = "Controller Doesn't Exist";
                     return false;
                 }
 
-                cmd.CommandText = $"UPDATE dbo.Controllers SET    ControllerName = '{controllerName}', " +
-                                                                $"Door1Name = '{door1Name}', " +
-                                                                $"Door2Name = '{door2Name}', " +
-                                                                $"Door3Name = '{door3Name}', " +
-                                                                $"Door4Name = '{door4Name}' " +
-                                                                $"WHERE ControllerSN = '{controllerSerial}'";
+                cmd = new SqlCommand(@"UPDATE dbo.Controllers SET   ControllerName = @controllerName,
+                                                                    Door1Name = @door1Name,
+                                                                    Door2Name = @door2Name, 
+                                                                    Door3Name = @door3Name, 
+                                                                    Door4Name = @door4Name 
+                                    WHERE ControllerSN = @controllerSerial", connection);
+
+                cmd.Parameters.Add(new SqlParameter("controllerName", controllerName));
+                cmd.Parameters.Add(new SqlParameter("door1Name", door1Name));
+                cmd.Parameters.Add(new SqlParameter("door2Name", door2Name));
+                cmd.Parameters.Add(new SqlParameter("door3Name", door3Name));
+                cmd.Parameters.Add(new SqlParameter("door4Name", door4Name));
+                cmd.Parameters.Add(new SqlParameter("controllerSerial", (Int32)controllerSerial));
+
                 cmd.ExecuteNonQuery();
 
                 connection.Close();
@@ -709,11 +757,11 @@ namespace FreesideKeyService.FSLocalDb
                 cmd.CommandText = $"SELECT ControllerName, ControllerSN, Door1Name, Door2Name, Door3Name, Door4Name FROM dbo.Controllers";
                 SqlDataReader rdr = cmd.ExecuteReader();
 
-                while(rdr.Read())
+                while (rdr.Read())
                 {
                     ControllerInfo ci = new ControllerInfo();
                     ci.controllerName = rdr.GetString(0);
-                    ci.controllerSerial = (UInt16) rdr.GetInt32(1);
+                    ci.controllerSerial = (UInt16)rdr.GetInt32(1);
                     ci.door1Name = rdr.GetString(2);
                     ci.door2Name = rdr.GetString(3);
                     ci.door3Name = rdr.GetString(4);
@@ -734,5 +782,99 @@ namespace FreesideKeyService.FSLocalDb
         }
 
         #endregion
+
+        /// <summary>
+        /// Door Permission Description
+        /// </summary>
+        public class GroupPermDesc
+        {
+            public Int32 controllerSerial;
+            public Int32 doorIndex;
+            public String doorName;
+
+            public GroupPermDesc(Int32 controllerSerial, Int32 doorIndex, String c)
+            {
+                this.controllerSerial = controllerSerial;
+                this.doorIndex = doorIndex;
+                this.doorName = doorName;
+            }
+
         }
+
+        /// <summary>
+        /// Door Summary Holding Class
+        /// </summary>
+        public class GroupPermEntry
+        {
+            public Int32 groupKey;
+            public Int32 controllerSerial;
+            public Int32 doorIndex;
+            
+            public GroupPermEntry(Int32 groupKey, Int32 controllerSerial, Int32 doorIndex)
+            {
+                this.groupKey = groupKey;
+                this.controllerSerial = controllerSerial;
+                this.doorIndex = doorIndex;
+            }
+
+        }
+
+        /// <summary>
+        /// Group Summary Holding Class
+        /// </summary>
+        public class GroupSummary
+        {
+            public Int32 groupKey;
+            public String groupName;
+            public List<GroupPermEntry> allowedDoors;
+
+            public GroupSummary(Int32 groupKey, String groupName)
+            {
+                this.groupKey = groupKey;
+                this.groupName = groupName;
+                this.allowedDoors = new List<GroupPermEntry>();
+            }
+        }
+
+
+        public static List<GroupSummary> ListGroups(out String ErrorMsg)
+        {
+            ErrorMsg = null;
+            try
+            {
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+                //First Get all Groups
+                List<GroupSummary> groupList = new List<GroupSummary>();
+                cmd = new SqlCommand(@"SELECT GroupKey, GroupName FROM dbo.Groups", connection);
+                
+                SqlDataReader rdr = cmd.ExecuteReader();
+
+                while (rdr.Read())
+                    groupList.Add(new GroupSummary(rdr.GetInt32(0), rdr.GetString(1)));
+                rdr.Close();
+
+                foreach(GroupSummary gs in groupList)
+                {
+                    cmd = new SqlCommand(@"SELECT GroupKey, ControllerSN, DoorIndex FROM dbo.GroupPerms", connection);
+                    rdr = cmd.ExecuteReader();
+                    while (rdr.Read())
+                        gs.allowedDoors.Add(new GroupPermEntry(rdr.GetInt32(0), rdr.GetInt32(1), rdr.GetInt32(2)));
+                    rdr.Close();
+                }
+
+                connection.Close();
+
+                return groupList;
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"LookupApiToken Failed. Reason: {e.Message}";
+                return null;
+            }
+
+        }
+    }
 }

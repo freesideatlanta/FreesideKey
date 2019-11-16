@@ -14,7 +14,7 @@ namespace FreesideKeyService
 
     [Route("api/controller/{action}")]
     [AuthRequired]
-    public class Controllercontroller : ApiController
+    public class ControllerController : ApiController
     {
 
         private class ControllerScanResponse
@@ -28,6 +28,8 @@ namespace FreesideKeyService
                 this.doorCount = doorCount;
             }
         }
+
+
 
         [HttpPost]
         public JObject ScanControllers()

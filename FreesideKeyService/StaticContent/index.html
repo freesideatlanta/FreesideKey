@@ -313,7 +313,7 @@
 
                  case 'groupsTab':
                      $('#groupsBody').show();
-                     listControllers();
+                     listGroupPerms();
                      break;
 
              }
@@ -815,6 +815,77 @@
 
 
 
+
+    }
+
+</script>
+
+<!-- Groups Page Scripts -->
+<script>
+
+    //Placeholder for Possible Group Permissions List
+    var groupPerms = null;
+
+    function listGroupPerms() {
+        $.ajax({
+            type: "POST", //GET, POST, PUT
+            url: xmlHttpRequestPrefix + 'controller/listgroupperms',  //the url to call
+            contentType: 'application/json; charset=utf-8',
+            beforeSend: function (xhr) {   //Set token here
+                xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+                //Clear The Controller List
+                $('#groupsTable > tbody')[0].replaceWith(document.createElement('tbody'));
+            }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('doorPermDesc')) {
+
+            }
+            $('#statusBarText').text(response['message']);
+            listGroups();
+
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+         });
+    }
+
+    function listGroups() {
+   
+
+
+
+     $.ajax({
+            type: "POST", //GET, POST, PUT
+            url: xmlHttpRequestPrefix + 'controller/listgroups',  //the url to call
+            contentType: 'application/json; charset=utf-8',
+            beforeSend: function (xhr) {   //Set token here
+                xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+                //Clear The Controller List
+                $('#groupsTable > tbody')[0].replaceWith(document.createElement('tbody'));
+            }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('controllers')) {
+                var groupsTableBody = document.createElement('tbody');
+
+                for (i in response.controllers) {
+                    var row = controllerTableBody.insertRow();
+
+                }
+
+                //Add to Table
+                $('#groupsTable > tbody')[0].replaceWith(controllerTableBody); 
+            }
+
+            $('#statusBarText').text(response['message']);
+
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+
+            //Clear The Controller List
+            $('#groupsTable > tbody')[0].replaceWith(document.createElement('tbody'));
+
+        });
 
     }
 

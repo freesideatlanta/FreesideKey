@@ -56,6 +56,7 @@
     <OutputPath>bin\x86\Release\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="API\GroupsController.cs" />
     <Compile Include="API\LoginController.cs" />
     <Compile Include="API\ApiKeyController.cs" />
     <Compile Include="API\ControllerController.cs" />
