@@ -2,10 +2,10 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="FreesideKeyService.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="serverPort" Type="System.Int32" Scope="User">
+    <Setting Name="serverPort" Type="System.UInt16" Scope="User">
       <Value Profile="(Default)">9000</Value>
     </Setting>
-    <Setting Name="controllerPort" Type="System.Int32" Scope="User">
+    <Setting Name="controllerPort" Type="System.UInt16" Scope="User">
       <Value Profile="(Default)">60000</Value>
     </Setting>
   </Settings>

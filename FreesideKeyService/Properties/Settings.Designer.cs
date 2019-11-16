@@ -26,9 +26,9 @@ namespace FreesideKeyService.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("9000")]
-        public int serverPort {
+        public ushort serverPort {
             get {
-                return ((int)(this["serverPort"]));
+                return ((ushort)(this["serverPort"]));
             }
             set {
                 this["serverPort"] = value;
@@ -38,9 +38,9 @@ namespace FreesideKeyService.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("60000")]
-        public int controllerPort {
+        public ushort controllerPort {
             get {
-                return ((int)(this["controllerPort"]));
+                return ((ushort)(this["controllerPort"]));
             }
             set {
                 this["controllerPort"] = value;

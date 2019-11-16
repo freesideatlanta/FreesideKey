@@ -170,7 +170,7 @@ namespace FreesideKeyService
     }
 
 
-    class Startup
+    class OwinStartup
     {
         // This code configures Web API. The Startup class is specified as a type
         // parameter in the WebApp.Start method.

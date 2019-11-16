@@ -17,8 +17,6 @@ using Newtonsoft.Json;
 namespace FreesideKeyService
 {
 
-
-
     [Route("api/apikey/{action}")]
     [AuthRequired]
     public class ApiKeyController : ApiController

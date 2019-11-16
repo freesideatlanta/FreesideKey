@@ -97,7 +97,6 @@ namespace WGToolKit
             public const string COMM_UDP = "UDP";
             public const string COMM_BROADCAST = "SMALL";
             public const string COMM_IP = "IP";
-            public const long COMM_UDP_PORT = 60000;
 
             public const long DATAFLASH_MAXPAGE = 4095;
             public const long CARDRECORD_MAX = 600000;

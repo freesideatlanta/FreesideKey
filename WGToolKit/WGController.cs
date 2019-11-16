@@ -30,10 +30,15 @@ namespace WGToolKit
         public string Netmask;
         public string Gateway;
 
-        public UInt16 Port;
+        public UInt16 udpPort;
         public UInt32 Password;
 
         public IPAddress HostIP;
+
+        public ConnectionInfo(UInt16 udpPort)
+        {
+            this.udpPort = udpPort;
+        }
     }
 
     public class ControllerRecord : IEquatable<ControllerRecord>
@@ -291,11 +296,17 @@ namespace WGToolKit
 
         WGController()
         {
-            Connection = new ConnectionInfo();
+            Connection = new ConnectionInfo(60000);
             WatchRecords = new List<ControllerRecord>();
         }
 
-        public static List<WGController> ScanNet()
+        WGController(UInt16 udpPort)
+        {
+            Connection = new ConnectionInfo(udpPort);
+            WatchRecords = new List<ControllerRecord>();
+        }
+
+        public static List<WGController> ScanNet(UInt16 udpPort)
         {
             //Get a List of all NICS, and set up a UDPClient ON Each
             NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
@@ -430,7 +441,7 @@ namespace WGToolKit
                 controller.Connection.Gateway = WGTools.NetToIPString(buf, 19); //$"{buf[20]}.{buf[21]}.{buf[22]}.{buf[23]}";
 
 
-                controller.Connection.Port = WGTools.NetToUInt16(buf, 23);
+                controller.Connection.udpPort = WGTools.NetToUInt16(buf, 23);
                 controller.Connection.Password = WGTools.NetToUInt32(buf, 25);
 
                 controller.Connection.HostIP = s.ep.Address;
@@ -564,8 +575,6 @@ namespace WGToolKit
 
         }
 
-
-        
 
         Thread watchThread;
         EventWaitHandle watchCancelEvent;

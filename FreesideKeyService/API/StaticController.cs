@@ -17,17 +17,6 @@ namespace FreesideKeyService
 
     public class StaticController : ApiController
     {
-        ////Serve Access Controlled Pages. Basically Everything under the Admin Folder
-        //[HttpGet]
-        //[RestrictToLocalhost]
-        //[Route("admin/{pageName:alpha?}", Order = 970)]
-        //public HttpResponseMessage AdminPages(string pageName = "index")
-        //{
-        //    HttpResponseMessage resp = new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK);
-        //    resp.Content = new System.Net.Http.StringContent("Admin Page:" + pageName, System.Text.Encoding.UTF8, "text/html");
-        //    return resp;
-        //}
-
 
         [HttpGet]
         [Route("")]
@@ -107,20 +96,5 @@ namespace FreesideKeyService
 
             return resp;
         }
-
-
-        //[HttpGet]
-        //[Route("", Order = 990)]        //IndexRoute
-        //public HttpResponseMessage Index()
-        //{
-        //    HttpResponseMessage resp = new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK);
-        //    resp.Content = new System.Net.Http.StringContent("Index Page", System.Text.Encoding.UTF8, "text/html");
-        //    return resp;
-        //}
-
-
-
-
-
     }
 }

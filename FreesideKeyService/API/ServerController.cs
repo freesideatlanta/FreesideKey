@@ -16,32 +16,6 @@ using WGToolKit;
 namespace FreesideKeyService
 {
 
-    //Response Data Types
-    public class ServerResponse
-    {
-        public String message;
-        public ServerResponse(String _message)
-        {
-            message = _message;
-        }
-    }
-
-    public class ApiKeyReponse : ServerResponse
-    {
-        public List<KeyDbManager.TokenResponse> ApiTokens;
-        public ApiKeyReponse(String _message, KeyDbManager.TokenResponse _token) : base (_message)
-        {
-            ApiTokens = new List<KeyDbManager.TokenResponse>();
-            ApiTokens.Add(_token);
-        }
-
-        public ApiKeyReponse(String _message, List<KeyDbManager.TokenResponse> _tokenList) : base(_message)
-        {
-            ApiTokens = _tokenList;
-        }
-    }
-
-
     [Route("api/server/{action}")]
     [AuthRequired]
     public class ServerController : ApiController
@@ -74,13 +48,14 @@ namespace FreesideKeyService
  
 
         [HttpPost]
+        //TODO: Add Support For NonStandard Port Selection
         public JObject SearchControllers()
         {
             JObject response = new JObject();
 
             //Controller Serial Number
             //Number Of Controllers
-            List<WGController> controllers = WGController.ScanNet();
+            List<WGController> controllers = WGController.ScanNet(Properties.Settings.Default.controllerPort);
 
             if(controllers == null)
             {

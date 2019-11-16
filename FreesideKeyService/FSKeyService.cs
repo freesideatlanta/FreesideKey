@@ -14,6 +14,8 @@ namespace FreesideKeyService
 {
     public partial class FSKeyService : ServiceBase
     {
+
+
         private IDisposable _server = null;
 
         public FSKeyService()
@@ -57,7 +59,7 @@ namespace FreesideKeyService
             options.Urls.Add($"https://*:{Properties.Settings.Default.serverPort}/");
 
 
-            _server = WebApp.Start<Startup>(options);
+            _server = WebApp.Start<OwinStartup>(options);
             
         }
 

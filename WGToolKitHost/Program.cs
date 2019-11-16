@@ -13,7 +13,7 @@ namespace WGTookKitTest
         }
         static void Main(string[] args)
         {
-            List<WGToolKit.WGController> controllers = WGToolKit.WGController.ScanNet();
+            List<WGToolKit.WGController> controllers = WGToolKit.WGController.ScanNet(60000);
 
             Console.WriteLine("**JankREadTest**\n");
             foreach (WGToolKit.WGController controller in controllers)

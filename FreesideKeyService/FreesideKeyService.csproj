@@ -162,7 +162,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="Startup.cs" />
+    <Compile Include="OwinStartup.cs" />
     <Compile Include="API\StaticController.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -41,7 +41,7 @@ namespace FreesideKeyService
 
             //Controller Serial Number
             //Number Of controllers
-            List<WGController> controllers = WGController.ScanNet();
+            List<WGController> controllers = WGController.ScanNet(Properties.Settings.Default.controllerPort);
 
             if(controllers == null)
             {
