@@ -150,11 +150,11 @@ namespace FreesideKeyService
             //Bind SSL Cert To Port
             try
             {
-                Microsoft.Web.Administration.NativeMethods.DeleteCertificateBinding(new IPEndPoint(IPAddress.Any, FSKeyCommon.Properties.Settings.Default.serverPort ));
+                Microsoft.Web.Administration.NativeMethods.DeleteCertificateBinding(new IPEndPoint(IPAddress.Any, Properties.Settings.Default.serverPort ));
             }
             catch { }
 
-            Microsoft.Web.Administration.NativeMethods.BindCertificate(new IPEndPoint(IPAddress.Any,FSKeyCommon.Properties.Settings.Default.serverPort ), sslHash, "MY", new Guid(g.Value));
+            Microsoft.Web.Administration.NativeMethods.BindCertificate(new IPEndPoint(IPAddress.Any,Properties.Settings.Default.serverPort ), sslHash, "MY", new Guid(g.Value));
 
 
             //REsult 0 = Success, 183 = Already Exists

@@ -9,7 +9,7 @@ namespace WGTookKitTest
     {
         public static void recordReceived(Object sender, WGToolKit.ControllerRecord recvRecord)
         {
-            Console.WriteLine($"\rRecord Received @ {DateTime.Now.ToString()}: Card ID: {recvRecord.cardID}, Controller Number {((WGToolKit.WGController) sender).Connection.ID}.");
+            Console.WriteLine($"\rRecord Received @ {DateTime.Now.ToString()}: Card ID: {recvRecord.cardID}, Controller Number {((WGToolKit.WGController)sender).Connection.ID}.");
         }
         static void Main(string[] args)
         {
@@ -35,7 +35,7 @@ namespace WGTookKitTest
                 }
             }
 
-            
+
             //List All Records
             Console.WriteLine("**Show All Records**\n");
             foreach (WGToolKit.WGController controller in controllers)
@@ -62,9 +62,9 @@ namespace WGTookKitTest
             Console.WriteLine("\nBeginning Watch.\n");
             Console.WriteLine("**Begin Initial Records**");
 
-            
 
-                foreach (WGToolKit.WGController controller in controllers)
+
+            foreach (WGToolKit.WGController controller in controllers)
                 controller.startWatch(new EventHandler<WGToolKit.ControllerRecord>(recordReceived));
             Thread.Sleep(2000);
             Console.WriteLine("**End Initial Records**\n\n");
@@ -91,7 +91,7 @@ namespace WGTookKitTest
             foreach (WGToolKit.WGController controller in controllers)
                 controller.stopWatch();
 
-            
+
             Console.WriteLine("\n\nWatch Complete. Press Any Key To Exit.");
 
             while (!Console.KeyAvailable)

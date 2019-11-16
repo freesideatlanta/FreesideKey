@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("WGDB_Manager")]
+[assembly: AssemblyTitle("WGToolKitHost")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("WGDB_Manager")]
+[assembly: AssemblyProduct("WGToolKitHost")]
 [assembly: AssemblyCopyright("Copyright ©  2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("8ee7174e-f0fd-4287-9d71-ccc4e9560eba")]
+[assembly: Guid("1f7b4241-e15b-494a-8f23-82401205186a")]
 
 // Version information for an assembly consists of the following four values:
 //

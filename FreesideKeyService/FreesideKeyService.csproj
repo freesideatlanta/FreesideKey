@@ -157,12 +157,21 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
     <Compile Include="Startup.cs" />
     <Compile Include="API\StaticController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.6.1">
@@ -177,11 +186,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FSKeyCommon\FSKeyCommon.csproj">
-      <Project>{9c6582d5-f61a-4292-a0e9-f38c92169a60}</Project>
-      <Name>FSKeyCommon</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\WGToolKit2\WGToolKit.csproj">
+    <ProjectReference Include="..\WGToolKit\WGToolKit.csproj">
       <Project>{ddfb4d8e-b114-4351-8b4b-79f4b8a5b526}</Project>
       <Name>WGToolKit</Name>
     </ProjectReference>
@@ -193,6 +198,16 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="StaticContent\index.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="OfflineResources\deleteIcon.png" />
+    <Content Include="OfflineResources\editicon.png" />
+    <Content Include="OfflineResources\ice-icon-1666.png" />
+    <Content Include="OfflineResources\LoginLeft.png" />
+    <Content Include="OfflineResources\LoginLock.png" />
+    <Content Include="OfflineResources\LoginStretchBg.png" />
+    <Content Include="OfflineResources\saveIcon.png" />
+    <Content Include="OfflineResources\Spinner-1s-25px.gif" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -54,7 +54,7 @@ namespace FreesideKeyService
 
             //Start WebApp
             StartOptions options = new StartOptions();
-            options.Urls.Add($"https://*:{FSKeyCommon.Properties.Settings.Default.serverPort}/");
+            options.Urls.Add($"https://*:{Properties.Settings.Default.serverPort}/");
 
 
             _server = WebApp.Start<Startup>(options);

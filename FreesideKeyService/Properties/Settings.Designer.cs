@@ -8,12 +8,12 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace FSKeyCommon.Properties {
+namespace FreesideKeyService.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.3.0.0")]
-    public sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
         
@@ -26,21 +26,24 @@ namespace FSKeyCommon.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("9000")]
-        public ushort serverPort {
+        public int serverPort {
             get {
-                return ((ushort)(this["serverPort"]));
+                return ((int)(this["serverPort"]));
             }
             set {
                 this["serverPort"] = value;
             }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("FSKeyService")]
-        public string serviceName {
+        [global::System.Configuration.DefaultSettingValueAttribute("60000")]
+        public int controllerPort {
             get {
-                return ((string)(this["serviceName"]));
+                return ((int)(this["controllerPort"]));
+            }
+            set {
+                this["controllerPort"] = value;
             }
         }
     }
