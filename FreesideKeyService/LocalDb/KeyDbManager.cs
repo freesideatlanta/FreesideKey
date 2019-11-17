@@ -126,7 +126,7 @@ namespace FreesideKeyService.FSLocalDb
                 }
 
                 //Create DB 
-                cmd.CommandText = $"CREATE DATABASE {DB_NAME} ON(NAME = N'{DB_NAME}', FILENAME = '{DB_FILE}'";
+                cmd.CommandText = $"CREATE DATABASE {DB_NAME} ON(NAME = '{DB_NAME}', FILENAME = '{DB_FILE}')";
 
                 cmd.ExecuteNonQuery();
 
@@ -792,7 +792,7 @@ namespace FreesideKeyService.FSLocalDb
             public Int32 doorIndex;
             public String doorName;
 
-            public GroupPermDesc(Int32 controllerSerial, Int32 doorIndex, String c)
+            public GroupPermDesc(Int32 controllerSerial, Int32 doorIndex, String doorName)
             {
                 this.controllerSerial = controllerSerial;
                 this.doorIndex = doorIndex;
@@ -876,5 +876,128 @@ namespace FreesideKeyService.FSLocalDb
             }
 
         }
+
+
+        public static bool CreateGroup(String groupName, out String ErrorMsg)
+        {
+            ErrorMsg = null;
+         
+            try
+            {
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+                cmd = new SqlCommand(@"SELECT COUNT(*) FROM dbo.Groups WHERE GroupName = @groupName", connection);
+                cmd.Parameters.Add(new SqlParameter("groupName", groupName));
+
+                Int32 count = (Int32)cmd.ExecuteScalar();
+                if (count > 0)
+                {
+                    ErrorMsg = $"CreateGroup Failed. Group already Exists";
+                    return false;
+                }
+
+                cmd = new SqlCommand(@"INSERT INTO dbo.Groups ( GroupName ) VALUES ( @groupName )", connection);
+                cmd.Parameters.Add(new SqlParameter("groupName", groupName));
+
+                cmd.ExecuteNonQuery();
+
+                connection.Close();
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"CreateGroup Failed. Reason: {e.Message}";
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool UpdatePerms(Int32 groupKey, List<GroupPermEntry> newEntrys, out String ErrorMsg)
+        {
+            ErrorMsg = null;
+
+            try
+            {
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+
+                //Begin Transaction
+                cmd = new SqlCommand(@"BEGIN TRANSACTION", connection);
+                cmd.ExecuteNonQuery();
+
+
+                //Purge Old Permissions
+                cmd = new SqlCommand(@"DELETE FROM dbo.GroupPerms WHERE GroupKey = @groupKey", connection);
+                cmd.Parameters.Add(new SqlParameter("groupKey", groupKey));
+
+                cmd.ExecuteNonQuery();
+
+
+                //Add New Permissions
+                foreach (GroupPermEntry gpe in newEntrys)
+                {
+                    cmd = new SqlCommand(@"INSERT INTO dbo.GroupPerms ( GroupKey, ControllerSN, DoorIndex ) VALUES ( @groupKey, @controllerSerial, @doorIndex )", connection);
+                    cmd.Parameters.Add(new SqlParameter("groupKey", groupKey));
+                    cmd.Parameters.Add(new SqlParameter("controllerSerial", gpe.controllerSerial));
+                    cmd.Parameters.Add(new SqlParameter("doorIndex", gpe.doorIndex));
+
+                    cmd.ExecuteNonQuery();
+                }
+
+                //Commit Transaction
+                cmd = new SqlCommand(@"COMMIT TRANSACTION", connection);
+                cmd.ExecuteNonQuery();
+
+                connection.Close();
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"Update Group Failed. Reason: {e.Message}";
+                return false;
+            }
+
+            return true;
+        }
+
+
+        public static bool DeleteGroup(Int32 groupKey, out String ErrorMsg)
+        {
+            ErrorMsg = null;
+
+            try
+            {
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+
+                //Purge Group From Permissions
+                cmd = new SqlCommand(@"DELETE FROM dbo.GroupPerms WHERE GroupKey = @groupKey", connection);
+                cmd.Parameters.Add(new SqlParameter("groupKey", groupKey));
+
+                cmd.ExecuteNonQuery();
+
+                //Purge Group From Groups
+                cmd = new SqlCommand(@"DELETE FROM dbo.Groups WHERE GroupKey = @groupKey", connection);
+                cmd.Parameters.Add(new SqlParameter("groupKey", groupKey));
+
+                cmd.ExecuteNonQuery();
+
+                connection.Close();
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"Delete Group Failed. Reason: {e.Message}";
+                return false;
+            }
+
+            return true;
+        }
+
     }
+
 }

@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 
 using FreesideKeyService.FSLocalDb;
 using WGToolKit;
+using Newtonsoft.Json;
 
 namespace FreesideKeyService
 {
@@ -74,6 +75,101 @@ namespace FreesideKeyService
             return result;
         }
 
-        
+
+
+        [HttpPost]
+        public JObject CreateGroup([NakedBody] String rawData)
+        {
+            String ErrorMsg;
+            JObject response = new JObject();
+
+            JObject request = JObject.Parse(rawData);
+
+            //Check GroupName
+            try
+            {
+                request = JObject.Parse(rawData);
+            }
+            catch
+            {
+                response["message"] = "Invalid JSON Format";
+                return response;
+            }
+
+            //Check GroupName Format
+            if (request["groupName"] == null || request["groupName"].Value<String>() == null || request["groupName"].Value<String>() == "" || request["groupName"].Value<String>().Length > 64)
+            {
+                response["message"] = "Invalid Group Name";
+                return response;
+            }
+
+
+            if (!KeyDbManager.CreateGroup(request["groupName"].Value<String>(), out ErrorMsg))
+            {
+                response["message"] = ErrorMsg;
+                response["groupName"] = request["groupName"].Value<String>();
+            }
+
+
+            response["message"] = "Create Group Success";
+            response["groupName"] = request["groupName"].Value<String>();
+
+            return response;
+        }
+
+
+        [HttpPost]
+        public JObject UpdateGroupPerms([NakedBody] String rawData)
+        {
+            String ErrorMsg;
+            JObject response = new JObject();
+
+            JObject request = JObject.Parse(rawData);
+
+            Int32 groupKey = request["groupKey"].Value<Int32>();
+
+
+            List<KeyDbManager.GroupPermEntry> newEntrys = new List<KeyDbManager.GroupPermEntry>();
+
+            JsonConvert.PopulateObject(request["newPerms"].ToString(), newEntrys);
+
+            if (!KeyDbManager.UpdatePerms(groupKey, newEntrys, out ErrorMsg))
+            {
+                response["message"] = ErrorMsg;
+                response["groupKey"] = groupKey;
+            }
+
+
+            response["message"] = "Update Group Success";
+            response["groupKey"] = groupKey;
+
+            return response;
+        }
+
+
+        [HttpPost]
+        public JObject DeleteGroup([NakedBody] String rawData)
+        {
+            String ErrorMsg;
+            JObject response = new JObject();
+
+            JObject request = JObject.Parse(rawData);
+
+            Int32 groupKey = request["groupKey"].Value<Int32>();
+
+
+            if (!KeyDbManager.DeleteGroup(groupKey, out ErrorMsg))
+            {
+                response["message"] = ErrorMsg;
+                response["groupKey"] = groupKey;
+            }
+
+            response["message"] = "Delete Group Success";
+            response["groupKey"] = groupKey;
+
+            return response;
+        }
+
+
     }
 }

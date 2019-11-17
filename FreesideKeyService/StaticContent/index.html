@@ -236,12 +236,14 @@
         margin-right: 6px;
     }
     .inputBarText {
+        float: left;
         display: inline-block;
         margin-top: 6px;
         margin-left: 6px;
         margin-right: 6px;
     }
     .inputBarInput {
+        float: left;
         display: inline-block;
         margin-top: 6px;
         margin-left: 6px;
@@ -314,6 +316,11 @@
                  case 'groupsTab':
                      $('#groupsBody').show();
                      listGroupPerms();
+                     break;
+
+                 case 'usersTab':
+                     $('#usersBody').show();
+                     listUserPerms();
                      break;
 
              }
@@ -829,7 +836,7 @@
     function listGroupPerms() {
         $.ajax({
             type: "POST", //GET, POST, PUT
-            url: xmlHttpRequestPrefix + 'controller/listgroupperms',  //the url to call
+            url: xmlHttpRequestPrefix + 'groups/listgroupperms',  //the url to call
             contentType: 'application/json; charset=utf-8',
             beforeSend: function (xhr) {   //Set token here
                 xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
@@ -839,10 +846,16 @@
         }).done(function (response) {
             //Response ok. process reuslt
             if (response.hasOwnProperty('doorPermDesc')) {
+                groupPerms = [];
 
+                for (i in response.doorPermDesc) {
+                    groupPerms.push(response.doorPermDesc[i]);
+                }
+
+                listGroups();
             }
             $('#statusBarText').text(response['message']);
-            listGroups();
+           
 
         }).fail(function (err) {
             $('#statusBarText').text('API Failure');
@@ -850,13 +863,10 @@
     }
 
     function listGroups() {
-   
-
-
 
      $.ajax({
             type: "POST", //GET, POST, PUT
-            url: xmlHttpRequestPrefix + 'controller/listgroups',  //the url to call
+            url: xmlHttpRequestPrefix + 'groups/listgroups',  //the url to call
             contentType: 'application/json; charset=utf-8',
             beforeSend: function (xhr) {   //Set token here
                 xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
@@ -865,16 +875,70 @@
             }
         }).done(function (response) {
             //Response ok. process reuslt
-            if (response.hasOwnProperty('controllers')) {
+            if (response.hasOwnProperty('groups')) {
                 var groupsTableBody = document.createElement('tbody');
 
-                for (i in response.controllers) {
-                    var row = controllerTableBody.insertRow();
+                for (i in response.groups) {
+                    var row = groupsTableBody.insertRow();
+                    row.id = 'groupRow' + response.groups[i].groupKey;
 
+                    //Group Name
+                    var cell = row.insertCell();
+                    cell.innerHTML = response.groups[i].groupName;
+
+
+                    //Permissions
+                    cell = row.insertCell();
+
+                    var newHTML = '';
+                    for (j in groupPerms) {
+
+                        var inputId = 'gpEntry-' + response.groups[i].groupKey + '-' + groupPerms[j].controllerSerial + '-' + groupPerms[j].doorIndex;
+                        var labelName = groupPerms[j].doorName;
+
+
+                        //Check if groupPerms[j] exists in response.groups[i].allowedoors[k] exists
+                        var checked = '';
+
+                        for (k in response.groups[i].allowedDoors) {
+                            if (response.groups[i].allowedDoors[k].controllerSerial == groupPerms[j].controllerSerial) {
+                                if (response.groups[i].allowedDoors[k].doorIndex == groupPerms[j].doorIndex) {
+                                    checked = ' checked';
+                                    break;
+                                }
+                            }
+                        }
+
+                        var onClickFn = "$('#groupRow' + " + response.groups[i].groupKey + ").css('background-color', 'yellow');"
+
+                        newHTML += '<span style="white-space: nowrap;"><input type="checkbox" onClick="' + onClickFn + '" id="' + inputId + '"' + checked + ' />&nbsp;' + labelName + '</span>';
+
+                    }
+
+                    cell.innerHTML = newHTML;
+
+
+
+                    //Save Icon
+                    cell = row.insertCell();
+                    var saveIcon = document.createElement('img');
+                    saveIcon.setAttribute('class', 'saveIcon');
+                    saveIcon.setAttribute('onClick', 'saveGroupPerms(\'' + response.groups[i].groupKey + '\');');
+                    saveIcon.src = $('#saveIcon').attr('src');
+                    cell.appendChild(saveIcon);
+
+
+                    //Delete Icon
+                    cell = row.insertCell();
+                    var deleteIcon = document.createElement('img');
+                    deleteIcon.setAttribute('class', 'saveIcon');
+                    deleteIcon.setAttribute('onClick', 'deleteGroupPerms(\'' + response.groups[i].groupKey + '\');');
+                    deleteIcon.src = $('#deleteIcon').attr('src');
+                    cell.appendChild(deleteIcon);
                 }
 
                 //Add to Table
-                $('#groupsTable > tbody')[0].replaceWith(controllerTableBody); 
+                $('#groupsTable > tbody')[0].replaceWith(groupsTableBody); 
             }
 
             $('#statusBarText').text(response['message']);
@@ -889,7 +953,110 @@
 
     }
 
+
+    function createGroup() {
+        
+        $.ajax({
+            type: "POST", //GET, POST, PUT
+            url: xmlHttpRequestPrefix + 'groups/creategroup',  //the url to call
+            data: JSON.stringify({ groupName: $('#newGroupName').val() }),
+            contentType: 'application/json; charset=utf-8',
+            beforeSend: function (xhr) {   //Set token here
+                xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+            }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('groupName')) {
+                //Reset GroupName
+                groupName: $('#newGroupName').val('');
+
+                listGroups();
+            }
+
+            $('#statusBarText').text(response['message']);
+
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+        });
+    }
+
+
+    function saveGroupPerms(groupKey) {
+        //Build UpdateData JSon
+        var updateRequest = { groupKey: groupKey, newPerms: []};
+
+        for (j in groupPerms) {
+            var inputId = 'gpEntry-' + groupKey + '-' + groupPerms[j].controllerSerial + '-' + groupPerms[j].doorIndex;
+            
+            if ($('#' + inputId).is(':checked')) {
+                var newPermEntry = groupPerms[j];
+                newPermEntry.groupKey = groupKey;
+                updateRequest.newPerms.push(newPermEntry);
+            }
+        }
+
+        $.ajax({
+            type: "POST", //GET, POST, PUT
+            url: xmlHttpRequestPrefix + 'groups/updategroupperms',  //the url to call
+            data: JSON.stringify(updateRequest),
+            contentType: 'application/json; charset=utf-8',
+            beforeSend: function (xhr) {   //Set token here
+                xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+            }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('groupKey')) {
+                //Update Groups List
+                //TODOClear Current Row Edit Flags
+                $('#groupRow' + response.groupKey).removeAttr('style');
+            }
+
+            $('#statusBarText').text(response['message']);
+
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+        });
+
+    }
+
+    function deleteGroupPerms(groupKey) {
+    //Build UpdateData JSon
+        var updateRequest = { groupKey: groupKey, newPerms: []};
+
+        $.ajax({
+            type: "POST", //GET, POST, PUT
+            url: xmlHttpRequestPrefix + 'groups/deletegroup',  //the url to call
+            data: JSON.stringify({ groupKey: groupKey }),
+            contentType: 'application/json; charset=utf-8',
+            beforeSend: function (xhr) {   //Set token here
+                xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+            }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('groupKey')) {
+                //Delete Row By Group Key
+                    $('#groupRow' + response.groupKey).remove();
+            }
+
+            $('#statusBarText').text(response['message']);
+
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+        });
+
+    }
+
+    
+
 </script>
+
+
+<!-- Users Page Script-->
+<script>
+
+
+</script>
+
 <!-- Login Box Scripts -->
 <script>
 
@@ -995,7 +1162,10 @@
     <div id="homeTab" class="tabBarItem" style="background-color:white"> Home </div>
     <div id="controllerTab" class="tabBarItem"> Controllers </div>
     <div id="groupsTab" class="tabBarItem"> Groups </div>
+    <div id="usersTab" class="tabBarItem"> Users </div>
     <div id="apiTab" class="tabBarItem"> API&nbsp;Keys </div>
+
+    
 
 </div>
 
@@ -1100,82 +1270,6 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td style="vertical-align: middle; white-space: nowrap;">Test Name</td>
-                    <td>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns" name="horns" />&nbsp;<label for="horns">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns2" name="horns2" />&nbsp;<label for="horns2">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns3" name="horns" />&nbsp;<label for="horns3">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns4" name="horns2" />&nbsp;<label for="horns4">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns5" name="horns" />&nbsp;<label for="horns5">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns6" name="horns2" />&nbsp;<label for="horns6">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns7" name="horns" />&nbsp;<label for="horns7">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns8" name="horns2" />&nbsp;<label for="horns8">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns9" name="horns" />&nbsp;<label for="horns9">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns10" name="horns2" />&nbsp;<label for="horns10">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns11" name="horns" />&nbsp;<label for="horns11">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns12" name="horns2" />&nbsp;<label for="horns12">Horns2</label></span>
-                    </td>
-                    <td style="vertical-align: middle;">Sav</td>
-                    <td style="vertical-align: middle;">Rest</td>
-                </tr>
-                <tr>
-                    <td style="vertical-align: middle; white-space: nowrap;">Test Name</td>
-                    <td>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns" name="horns" />&nbsp;<label for="horns">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns2" name="horns2" />&nbsp;<label for="horns2">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns3" name="horns" />&nbsp;<label for="horns3">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns4" name="horns2" />&nbsp;<label for="horns4">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns5" name="horns" />&nbsp;<label for="horns5">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns6" name="horns2" />&nbsp;<label for="horns6">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns7" name="horns" />&nbsp;<label for="horns7">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns8" name="horns2" />&nbsp;<label for="horns8">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns9" name="horns" />&nbsp;<label for="horns9">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns10" name="horns2" />&nbsp;<label for="horns10">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns11" name="horns" />&nbsp;<label for="horns11">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns12" name="horns2" />&nbsp;<label for="horns12">Horns2</label></span>
-                    </td>
-                    <td style="vertical-align: middle;">Sav</td>
-                    <td style="vertical-align: middle;">Rest</td>
-                </tr>
-                <tr>
-                    <td style="vertical-align: middle; white-space: nowrap;">Test Name</td>
-                    <td>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns" name="horns" />&nbsp;<label for="horns">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns2" name="horns2" />&nbsp;<label for="horns2">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns3" name="horns" />&nbsp;<label for="horns3">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns4" name="horns2" />&nbsp;<label for="horns4">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns5" name="horns" />&nbsp;<label for="horns5">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns6" name="horns2" />&nbsp;<label for="horns6">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns7" name="horns" />&nbsp;<label for="horns7">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns8" name="horns2" />&nbsp;<label for="horns8">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns9" name="horns" />&nbsp;<label for="horns9">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns10" name="horns2" />&nbsp;<label for="horns10">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns11" name="horns" />&nbsp;<label for="horns11">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns12" name="horns2" />&nbsp;<label for="horns12">Horns2</label></span>
-                    </td>
-                    <td style="vertical-align: middle;">Sav</td>
-                    <td style="vertical-align: middle;">Rest</td>
-                </tr>
-                <tr>
-                    <td style="vertical-align: middle; white-space: nowrap;">Test Name</td>
-                    <td>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns" name="horns" />&nbsp;<label for="horns">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns2" name="horns2" />&nbsp;<label for="horns2">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns3" name="horns" />&nbsp;<label for="horns3">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns4" name="horns2" />&nbsp;<label for="horns4">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns5" name="horns" />&nbsp;<label for="horns5">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns6" name="horns2" />&nbsp;<label for="horns6">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns7" name="horns" />&nbsp;<label for="horns7">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns8" name="horns2" />&nbsp;<label for="horns8">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns9" name="horns" />&nbsp;<label for="horns9">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns10" name="horns2" />&nbsp;<label for="horns10">Horns2</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns11" name="horns" />&nbsp;<label for="horns11">Horns</label></span>
-                        <span style="display: inline-block; margin-right: 12px;"><input type="checkbox" id="horns12" name="horns2" />&nbsp;<label for="horns12">Horns2</label></span>
-                    </td>
-                    <td style="vertical-align: middle;">Sav</td>
-                    <td style="vertical-align: middle;">Rest</td>
-                </tr>
             </tbody>
         </table>
 
@@ -1185,7 +1279,38 @@
         </div>
     </div>
 
-    
+
+
+    <div id="usersBody" class="bodyStorage">
+        <table id="usersTable">
+            <caption>Users</caption>
+            <thead>
+                <tr>
+                    <th>User Name</th>
+                    <th>Card ID</th>
+                    <th>Disable Card</th>
+                    <th>Group Memberships</th>
+                    <th>Save</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+        <div class="inputBar">
+            <span class="inputBarText">Card ID: </span><input class="inputBarInput" type="text" id="newUserCardInput" />
+            <button type="button" class="inputBarButton" onclick="scanUser();">Scan for Card</button>
+            <span class="inputBarText">User Name: </span><input class="inputBarInput" type="text" id="newUserNameInput" />
+            <button type="button" class="inputBarButton" onclick="createUser();">Create New User</button>
+
+
+        </div>
+    </div>
+
+
+
+
 </div>
 
 <div id="statusFooter"><span>Operation Status: </span><span id="statusBarText"></span></div>
