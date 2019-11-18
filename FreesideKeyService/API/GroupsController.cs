@@ -133,7 +133,7 @@ namespace FreesideKeyService
 
             JsonConvert.PopulateObject(request["newPerms"].ToString(), newEntrys);
 
-            if (!KeyDbManager.UpdatePerms(groupKey, newEntrys, out ErrorMsg))
+            if (!KeyDbManager.UpdateGroupPerms(groupKey, newEntrys, out ErrorMsg))
             {
                 response["message"] = ErrorMsg;
                 response["groupKey"] = groupKey;

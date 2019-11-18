@@ -60,8 +60,6 @@ namespace FreesideKeyService.FSLocalDb
                         cmd.ExecuteNonQuery();
                         connection.Close();
 
-
-
                     }
                     catch (Exception e)
                     {
@@ -201,7 +199,7 @@ namespace FreesideKeyService.FSLocalDb
                 //Users Table
                 cmd.CommandText = @"CREATE TABLE dbo.Users (  UserKey int IDENTITY(1,1) PRIMARY KEY,
 	                                                          UserName varchar(64) NOT NULL,
-                                                              CardID int NOT NULL,  
+                                                              CardID int NOT NULL UNIQUE,  
                                                               CardActive bit NOT NULL
 	                                                       )  ON [PRIMARY]";
                 cmd.ExecuteNonQuery();
@@ -921,7 +919,7 @@ namespace FreesideKeyService.FSLocalDb
             return true;
         }
 
-        public static bool UpdatePerms(Int32 groupKey, List<GroupPermEntry> newEntrys, out String ErrorMsg)
+        public static bool UpdateGroupPerms(Int32 groupKey, List<GroupPermEntry> newEntrys, out String ErrorMsg)
         {
             ErrorMsg = null;
 
@@ -993,6 +991,11 @@ namespace FreesideKeyService.FSLocalDb
 
                 cmd.ExecuteNonQuery();
 
+                //Delete Group Memberships
+                cmd = new SqlCommand(@"DELETE FROM dbo.GroupMembership WHERE GroupKey = @groupKey", connection);
+                cmd.Parameters.Add(new SqlParameter("groupKey", groupKey));
+                cmd.ExecuteNonQuery();
+
                 connection.Close();
             }
             catch (Exception e)
@@ -1045,9 +1048,273 @@ namespace FreesideKeyService.FSLocalDb
                 return null;
             }
 
+        }
 
+        public static bool AddUser(String userName, UInt32 cardID, out String ErrorMsg)
+        {
+            ErrorMsg = null;
+
+            try
+            {
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+
+                cmd = new SqlCommand(@"INSERT INTO dbo.Users (UserName, CardID, CardActive ) VALUES ( @userName, @cardID, '1' )", connection);
+                cmd.Parameters.Add(new SqlParameter("userName", userName));
+                cmd.Parameters.Add(new SqlParameter("cardID", (Int32) cardID));
+                cmd.ExecuteNonQuery();
+
+                connection.Close();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"Add User Failed. Reason: {e.Message}";
+                return false;
+            }
+        }
+
+
+        public static bool EditUser(Int32 userKey, String userName, Int32 cardID, List<Int32> groupPerms, Boolean cardActive, out String ErrorMsg)
+        {
+            ErrorMsg = null;
+
+            try
+            {
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+                //Start Transaction
+                cmd = new SqlCommand(@"BEGIN TRANSACTION", connection);
+                cmd.ExecuteNonQuery();
+
+                //Update User Fields
+                cmd = new SqlCommand(@"UPDATE dbo.Users SET  UserName = @userName,
+                                                                    CardID = @cardID,
+                                                                    CardActive = @cardActive 
+                                    WHERE UserKey = @userKey", connection);
+
+                cmd.Parameters.Add(new SqlParameter("userName", userName));
+                cmd.Parameters.Add(new SqlParameter("cardID", cardID));
+                cmd.Parameters.Add(new SqlParameter("cardActive", cardActive ? 1 : 0));
+                cmd.Parameters.Add(new SqlParameter("userKey", userKey));
+                cmd.ExecuteNonQuery();
+
+                //Purge Old Permissions
+                cmd = new SqlCommand(@"DELETE FROM dbo.GroupMembership
+                                    WHERE UserKey = @userKey", connection);
+                cmd.Parameters.Add(new SqlParameter("userKey", userKey));
+                cmd.ExecuteNonQuery();
+
+                //Add New Permissions
+                foreach(Int32 groupKey in groupPerms)
+                {
+                    cmd = new SqlCommand(@"INSERT INTO dbo.GroupMembership ( UserKey, GroupKey ) VALUES (@userKey, @groupKey)", connection);
+                    cmd.Parameters.Add(new SqlParameter("userKey", userKey));
+                    cmd.Parameters.Add(new SqlParameter("groupKey", groupKey));
+
+                    cmd.ExecuteNonQuery();
+                }
+
+                //Start Transaction
+                cmd = new SqlCommand(@"COMMIT TRANSACTION", connection);
+                cmd.ExecuteNonQuery();
+
+                connection.Close();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"Edit User Failed. Reason: {e.Message}";
+                return false;
+            }
+        }
+
+        public static bool DeleteUser(UInt32 userKey, out String ErrorMsg)
+        {
+            ErrorMsg = null;
+
+            try
+            {
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+
+                //Start Transaction
+                cmd = new SqlCommand(@"BEGIN TRANSACTION", connection);
+                cmd.ExecuteNonQuery();
+
+                //Delete Users
+                cmd = new SqlCommand(@"DELETE FROM dbo.Users WHERE UserKey = @userKey", connection);
+                cmd.Parameters.Add(new SqlParameter("userKey", (Int32) userKey));
+                cmd.ExecuteNonQuery();
+
+                //Delete Group Memberships
+                cmd = new SqlCommand(@"DELETE FROM dbo.GroupMembership WHERE UserKey = @userKey", connection);
+                cmd.Parameters.Add(new SqlParameter("userKey", (Int32) userKey));
+                cmd.ExecuteNonQuery();
+
+                //Start Transaction
+                cmd = new SqlCommand(@"COMMIT TRANSACTION", connection);
+                cmd.ExecuteNonQuery();
+
+
+                connection.Close();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"Delete User Failed. Reason: {e.Message}";
+                return false;
+            }
 
         }
+
+        public class UserSummary
+        {
+            public Int32 userKey;
+            public String userName;
+            public Int32 cardID;
+            public Boolean cardActive;
+
+            public List<GroupSummary> groups;
+
+            public UserSummary(Int32 userKey, String userName, Int32 cardID, Boolean cardActive, List<GroupSummary> groups)
+            {
+                this.userKey = userKey;
+                this.userName = userName;
+                this.cardID = cardID;
+                this.cardActive = cardActive;
+
+                this.groups = groups;
+            }
+        }
+
+        public static GroupSummary LookupGroup(Int32 groupKey, out String ErrorMsg)
+        {
+
+            ErrorMsg = null;
+
+            try
+            {
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+
+                cmd = new SqlCommand(@"SELECT GroupName FROM dbo.Groups WHERE GroupKey = @groupKey", connection);
+                cmd.Parameters.Add(new SqlParameter("groupKey", groupKey));
+                SqlDataReader rdr = cmd.ExecuteReader();
+
+                GroupSummary result = null;
+                if (rdr.Read())
+                {
+                    result = new GroupSummary(groupKey, rdr.GetString(0));
+                }
+
+                rdr.Close();
+                connection.Close();
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"Lookup Group Failed. Reason: {e.Message}";
+                return null;
+            }
+
+        }
+
+        public static List<GroupSummary> LookupUserGroups(Int32 userKey, out String ErrorMsg)
+        {
+            ErrorMsg = null;
+
+            try
+            {
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+
+                cmd = new SqlCommand(@"SELECT GroupKey FROM dbo.GroupMembership WHERE UserKey = @userKey", connection);
+                cmd.Parameters.Add(new SqlParameter("userKey", userKey));
+                SqlDataReader rdr = cmd.ExecuteReader();
+
+                List<GroupSummary> result = new List<GroupSummary>();
+                while (rdr.Read())
+                {
+                    GroupSummary gs = LookupGroup(rdr.GetInt32(0), out ErrorMsg);
+                    if (ErrorMsg != null)
+                    {
+                        rdr.Close();
+                        connection.Close();
+                        return null;
+                    }
+                    result.Add(gs);
+                }
+
+                rdr.Close();
+                connection.Close();
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"Lookup User Groups Failed. Reason: {e.Message}";
+                return null;
+            }
+        }
+
+        public static List<UserSummary> ListUsers(out String ErrorMsg)
+        {
+            ErrorMsg = null;
+
+            try
+            {
+                List<UserSummary> result = new List<UserSummary>();
+
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+
+                cmd = new SqlCommand(@"SELECT UserKey, UserName, CardID, cardActive FROM dbo.Users", connection);
+                SqlDataReader rdr = cmd.ExecuteReader();
+
+                while(rdr.Read())
+                {
+                    //Grab Groups For This User First
+                    List<GroupSummary> ugs = LookupUserGroups(rdr.GetInt32(0), out ErrorMsg);
+                    if(ErrorMsg != null)
+                    {
+                        rdr.Close();
+                        connection.Close();
+                        return null;
+                    }
+
+                    result.Add(new UserSummary(rdr.GetInt32(0), rdr.GetString(1), rdr.GetInt32(2), rdr.GetBoolean(3), ugs));
+
+                }
+
+                rdr.Close();
+                connection.Close();
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"List Users Failed. Reason: {e.Message}";
+                return null;
+            }
+        }
+
     }
 
 }

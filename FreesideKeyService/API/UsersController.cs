@@ -9,6 +9,7 @@ using System.Threading;
 using Newtonsoft.Json.Linq;
 
 using FreesideKeyService.FSLocalDb;
+using Newtonsoft.Json;
 
 namespace FreesideKeyService
 {
@@ -162,9 +163,151 @@ namespace FreesideKeyService
 
         }
 
+        [HttpPost]
+        public JObject AddUser([NakedBody] String rawData)
+        {
+            String ErrorMsg;
 
+            //Try to Parse JObject
+            JObject request;
+            JObject response = new JObject();
+
+            try
+            {
+                request = JObject.Parse(rawData);
+            }
+            catch
+            {
+                response["message"] = "Invalid JSON Format";
+                return response;
+            }
+
+
+            UInt32 cardID;
+            if (!UInt32.TryParse(request["cardID"].Value<String>(), out cardID))
+            {
+                response["message"] = "Invalid Card Number";
+                return response;
+            }
+
+            
+            //Add To Database With Default Perms. (CardActive, No Groups)
+            if (!KeyDbManager.AddUser(request["userName"].Value<String>(), cardID, out ErrorMsg))
+            {
+                //Add Failed
+                response["message"] = ErrorMsg;
+                return response;
+            }
+
+
+            //Success Response
+            response["message"] = "User Add Success";
+            response["cardID"] = cardID;
+            return response;
+        }
+
+
+        [HttpPost]
+        public JObject DeleteUser([NakedBody] String rawData)
+        {
+            String ErrorMsg;
+
+            //Try to Parse JObject
+            JObject request;
+            JObject response = new JObject();
+
+            try
+            {
+                request = JObject.Parse(rawData);
+            }
+            catch
+            {
+                response["message"] = "Invalid JSON Format";
+                return response;
+            }
+
+
+            UInt32 userKey;
+            if (!UInt32.TryParse(request["userKey"].Value<String>(), out userKey))
+            {
+                response["message"] = "Invalid User Key";
+                return response;
+            }
+
+
+            //Delete User
+            if (!KeyDbManager.DeleteUser(userKey, out ErrorMsg))
+            {
+                //Delete Failed
+                response["message"] = ErrorMsg;
+                return response;
+            }
+
+
+            //Success Response
+            response["message"] = "Delete User Success";
+            response["userKey"] = userKey;
+            return response;
+        }
+
+        [HttpPost]
+        public JObject ListUsers()
+        {
+            String ErrorMsg;
+
+            JObject response = new JObject();
+
+
+            //Get List Of Users and Associated Groups
+            List<KeyDbManager.UserSummary> userSummary = KeyDbManager.ListUsers(out ErrorMsg);
+            if (ErrorMsg != null)
+            {
+                //List Users Failed
+                response["message"] = ErrorMsg;
+                return response;
+            }
+
+            //Success Response
+            response["message"] = $"{userSummary.Count} Users Found";
+            response["userSummary"] = JToken.FromObject(userSummary);
+            return response;
+        }
+
+        [HttpPost]
+        public JObject EditUser([NakedBody] String rawData)
+        {
+            String ErrorMsg;
+
+            //Try to Parse JObject
+            JObject request;
+
+            request = JObject.Parse(rawData);
+            JObject response = new JObject();
+
+
+            Int32 userKey = request["userKey"].Value<Int32>();
+            String userName = request["userName"].Value<String>();
+            Int32 cardID = request["cardID"].Value<Int32>();
+            Boolean cardActive = request["cardActive"].Value<Boolean>();
+
+            List<Int32> groupPerms = JsonConvert.DeserializeObject<List<Int32>>(request["groupPerms"].ToString());
+
+            //Add To Database With Default Perms. (CardActive, No Groups)
+            if (!KeyDbManager.EditUser(userKey, userName, cardID, groupPerms, cardActive, out ErrorMsg))
+            {
+                //Add Failed
+                response["message"] = ErrorMsg;
+                return response;
+            }
+
+
+            //Success Response
+            response["message"] = "User Edit Success";
+            response["userKey"] = userKey;
+            return response;
+        }
 
     }
 
 
-    }
+}

@@ -364,7 +364,7 @@
 
                  case 'usersTab':
                      $('#usersBody').show();
-                     //listUserPerms();
+                     getGroupsForUsers();
                      break;
 
              }
@@ -584,6 +584,7 @@
 
                 for (i in response.controllers) {
                     var row = controllerTableBody.insertRow();
+                    row.id = 'controllerRow' + i;
 
 
 
@@ -684,7 +685,7 @@
                     cell.style = 'text-align:left; padding-left: 0;';
 
 
-                    //SAve
+                    //Save
                     cell = row.insertCell();
 
                     var saveIcon = document.createElement('img');
@@ -778,7 +779,7 @@
         var fielddbg = $('#' + fieldId);
 
         var originalText = $('#' + fieldId).html();
-        var originalBackground = $('#' + fieldId).css('background-color');
+        var originalBackground = $('#' + fieldId).parent().css('background-color');
 
         $('#' + fieldId).html('<input type="text"></input>');
         
@@ -787,10 +788,10 @@
             var newText = $('#' + fieldId + '> input').val();
             if (newText != '') {
                 $('#' + fieldId).html(newText);
-                $('#' + fieldId).css('background-color', 'yellow');
+                $('#' + fieldId).parent().css('background-color', 'yellow');
             } else {
                 $('#' + fieldId).html(originalText);
-                $('#' + fieldId).css('background-color', originalBackground);
+                $('#' + fieldId).parent().css('background-color', originalBackground);
             }
         });
 
@@ -798,13 +799,13 @@
             if (event.keyCode == 13) {  //Enter
                 var newText = $('#' + fieldId + '> input').val();
                 $('#' + fieldId).html(newText);
-                $('#' + fieldId).css('background-color', 'yellow');
+                $('#' + fieldId).parent().css('background-color', 'yellow');
                 return;
             }
 
             if (event.keyCode == 27) { //Escape
                 $('#' + fieldId).html(originalText);
-                $('#' + fieldId).css('background-color', originalBackground);
+                $('#' + fieldId).parent().css('background-color', originalBackground);
                 return;
             }
         });
@@ -815,21 +816,8 @@
 
 
     function saveEditedController(rowID, serial) {
-        //TODO: Check If Anything has Been Changed At All
-        var changesMade = false;
-
-        if ($('#controllerName' + rowID).css('background-color') == $('#cssYellow').css('background-color'))
-            changesMade = true;
-        if ($('#door1Name' + rowID).css('background-color') == $('#cssYellow').css('background-color'))
-            changesMade = true;
-        if ($('#door2Name' + rowID).css('background-color') == $('#cssYellow').css('background-color'))
-            changesMade = true;
-        if ($('#door3Name' + rowID).css('background-color') == $('#cssYellow').css('background-color'))
-            changesMade = true;
-        if ($('#door4Name' + rowID).css('background-color') == $('#cssYellow').css('background-color'))
-            changesMade = true;
-
-        if (!changesMade) {
+        //Check If Anything has Been Changed At All
+        if ($('#controllerRow' + rowID).css('background-color') != $('#cssYellow').css('background-color')) {
             alert('Nothing To Save');
             return;
         }
@@ -854,11 +842,7 @@
             //Response ok. process reuslt
             if (response.hasOwnProperty('controllerSN')) {
                 //Clear Current Rows Edit Status
-                $('#controllerName' + rowID).css('background-color', 'transparent');
-                $('#door1Name' + rowID).css('background-color', 'transparent');
-                $('#door2Name' + rowID).css('background-color', 'transparent');
-                $('#door3Name' + rowID).css('background-color', 'transparent');
-                $('#door4Name' + rowID).css('background-color', 'transparent');
+                $('#controllerRow' + rowID).removeAttr('style');
             }
   
             $('#statusBarText').text(response['message']);
@@ -1101,6 +1085,242 @@
 
 <!-- Users Page Script-->
 <script>
+
+    var possibleGroups;
+
+    function createUser() {  
+        $.ajax({
+        type: "POST", //GET, POST, PUT
+        url: xmlHttpRequestPrefix + 'users/addUser',  //the url to call
+        data: JSON.stringify({ cardID: $('#newUserCardInput').val()  , userName: $('#newUserNameInput').val()}),
+        contentType: 'application/json; charset=utf-8',
+        beforeSend: function (xhr) {   //Set token here
+            xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+        }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('cardID')) {
+                listUsers();
+            }
+
+            $('#statusBarText').text(response['message']);
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+        });
+    }
+
+    function deleteUser(userKey) {  
+        $.ajax({
+        type: "POST", //GET, POST, PUT
+        url: xmlHttpRequestPrefix + 'users/deleteuser',  //the url to call
+        data: JSON.stringify({ userKey: userKey}),
+        contentType: 'application/json; charset=utf-8',
+        beforeSend: function (xhr) {   //Set token here
+            xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+        }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('userKey')) {
+                $('#userRow' + userKey).remove();
+            }
+
+            $('#statusBarText').text(response['message']);
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+        });
+    }
+
+    function getGroupsForUsers() {
+        
+        $.ajax({
+        type: "POST", //GET, POST, PUT
+        url: xmlHttpRequestPrefix + 'groups/listgroups',  //the url to call
+        contentType: 'application/json; charset=utf-8',
+        beforeSend: function (xhr) {   //Set token here
+            xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+        }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('groups')) {
+                possibleGroups = response.groups;
+                listUsers();
+            }
+
+            $('#statusBarText').text(response['message']);
+
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+        });
+    }
+
+    function listUsers() {
+
+        $.ajax({
+            type: "POST", //GET, POST, PUT
+            url: xmlHttpRequestPrefix + 'users/listusers',  //the url to call
+            contentType: 'application/json; charset=utf-8',
+            beforeSend: function (xhr) {   //Set token here
+                xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+            }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('userSummary')) {
+                //Clear Old User Table
+                $( '#usersTable > tbody').empty();
+
+                //Build The Users Table
+
+                var newUserTableBody = document.createElement('tbody');
+
+                for (i in response['userSummary']) {
+                    var row = newUserTableBody.insertRow();
+                    row.id = 'userRow' + response.userSummary[i].userKey;
+
+
+
+                    //EditButton
+                    var cell = row.insertCell();
+                    cell.style = 'text-align:right; padding-right: 0;';
+
+                    editIcon = document.createElement('img');
+                    editIcon.setAttribute('class', 'editIcon');
+                    editIcon.setAttribute('onClick', 'editControllerField(\'' + 'userNameEntry' + response.userSummary[i].userKey + '\');');
+                    editIcon.src = $('#editIcon').attr('src');
+                    cell.appendChild(editIcon);
+
+                    //User Name
+                    cell = row.insertCell();
+                    cell.id = 'userNameEntry' + response.userSummary[i].userKey;
+                    cell.innerHTML = response.userSummary[i].userName;
+
+                    //EditButton
+                    cell = row.insertCell();
+                    cell.style = 'text-align:right; padding-right: 0;';
+
+                    editIcon = document.createElement('img');
+                    editIcon.setAttribute('class', 'editIcon');
+                    editIcon.setAttribute('onClick', 'editControllerField(\'' + 'cardIDEntry' + response.userSummary[i].userKey + '\');');
+                    editIcon.src = $('#editIcon').attr('src');
+                    cell.appendChild(editIcon);
+
+                    //CardID
+                    cell = row.insertCell();
+                    cell.innerHTML = response.userSummary[i].cardID;
+                    cell.id = 'cardIDEntry' + response.userSummary[i].userKey;
+
+                    //Disable Card
+                    cell = row.insertCell();
+                    var activeInputId = 'cardActiveEntry' + response.userSummary[i].userKey;
+                    var activeChecked = response.userSummary[i].cardActive ? ' checked' : '';
+
+                    var activeOnClickFn = "$('#userRow' + " + response.userSummary[i].userKey + ").css('background-color', 'yellow');"
+                    cell.innerHTML = '<span style="white-space: nowrap;"><input type="checkbox" onClick="' + activeOnClickFn + '" id="' + activeInputId + '"' + activeChecked + ' />&nbsp;' + 'Access Enabled' + '</span>';
+
+
+                    //Group Memberships
+                    cell = row.insertCell();
+
+                    var newHTML = '';
+                    for (j in possibleGroups) {
+                        var inputId = 'userGroupEntry-' + response.userSummary[i].userKey + '-' + possibleGroups[j].groupKey;
+                        var labelName = possibleGroups[j].groupName;
+
+                        //Check if possibleGroups[j].groupKey exists in response.userSummary[i].groups[k].groupKey exists
+                        var checked = '';
+
+                        for (k in response.userSummary[i].groups) {
+                            if (response.userSummary[i].groups[k].groupKey == possibleGroups[j].groupKey) {
+                                checked = ' checked';
+                                break;
+                            }
+                        }
+
+                        var onClickFn = "$('#userRow' + " + response.userSummary[i].userKey + ").css('background-color', 'yellow');"
+
+                        newHTML += '<span style="white-space: nowrap;"><input type="checkbox" onClick="' + onClickFn + '" id="' + inputId + '"' + checked + ' />&nbsp;' + labelName + '</span>';
+                    }
+
+                    cell.innerHTML = newHTML;
+
+                   
+                    //SAve
+                    cell = row.insertCell();
+
+                    var saveIcon = document.createElement('img');
+                    saveIcon.setAttribute('class', 'saveIcon');
+                    saveIcon.setAttribute('onClick', 'saveEditedUser(' + response.userSummary[i].userKey + ', ' + response.userSummary[i]['userKey'] + ');');
+                    saveIcon.src = $('#saveIcon').attr('src');
+                    cell.appendChild(saveIcon);
+
+                    //Delete
+                    cell = row.insertCell();
+                    var deleteIcon = document.createElement('img');
+                    deleteIcon.setAttribute('class', 'deleteIcon');
+                    deleteIcon.setAttribute('onClick', 'deleteUser(\'' + response.userSummary[i]['userKey'] + '\');');
+                    deleteIcon.src = $('#deleteIcon').attr('src');
+
+                    cell.appendChild(deleteIcon);
+
+                }
+
+                $('#usersTable > tbody')[0].replaceWith(newUserTableBody);
+
+            }
+
+            $('#statusBarText').text(response['message']);
+
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+        });
+
+    }
+
+
+
+    function saveEditedUser(userKey) {
+
+        
+        
+        var userName = $('#userNameEntry' + userKey).html();
+        var cardID = parseInt($('#cardIDEntry' + userKey).html());
+        var cardActive = $('#cardActiveEntry' + userKey).is(':checked');
+
+        var groupPerms = [];
+        //Loop Though Possible GroupKeys
+        for (j in possibleGroups) {
+            if ($('#userGroupEntry-' + userKey + '-' + possibleGroups[j].groupKey).is(':checked'))
+                groupPerms.push(possibleGroups[j].groupKey);
+        }
+
+        var request = {userKey: userKey, userName: userName, cardID: cardID, cardActive: cardActive, groupPerms: groupPerms };
+         
+        $.ajax({
+            type: "POST", //GET, POST, PUT
+            url: xmlHttpRequestPrefix + 'users/edituser',  //the url to call
+            data: JSON.stringify(request),
+            contentType: 'application/json; charset=utf-8',
+            beforeSend: function (xhr) {   //Set token here
+                xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+            }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('userKey')) {
+                //Clear Highlight
+                $('#userRow' + userKey).removeAttr('style');
+            }
+            
+            $('#statusBarText').text(response['message']);
+
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+        });
+
+
+
+
+    }
+
+
 
     var scanCardInterval;
     var startIndex = 0;
@@ -1393,9 +1613,11 @@
             <caption>Users</caption>
             <thead>
                 <tr>
+                    <th></th>
                     <th>User Name</th>
+                    <th></th>
                     <th>Card ID</th>
-                    <th>Disable Card</th>
+                    <th>Enabled</th>
                     <th>Group Memberships</th>
                     <th>Save</th>
                     <th>Delete</th>

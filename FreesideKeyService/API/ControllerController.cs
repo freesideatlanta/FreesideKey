@@ -104,7 +104,7 @@ namespace FreesideKeyService
             }
 
             //Success Response
-            response["message"] = "Controller Add Success";
+            response["message"] = "Controller Edit Success";
             response["controllerSN"] = serialNum;
             return response;
 
@@ -262,7 +262,7 @@ namespace FreesideKeyService
             }
 
             //Success Response
-            response["message"] = "Controller Add Success";
+            response["message"] = "Controller Edit Success";
             response["controllerSN"] = serialNum;
             return response;
 
