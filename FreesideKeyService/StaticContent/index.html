@@ -34,20 +34,20 @@
         padding-right: 45px;
     }
 
-        #loginButton:hover {
-            cursor: pointer;
-            color: black;
-        }
+    #loginButton:hover {
+        cursor: pointer;
+        color: black;
+    }
 
     #loginText {
         margin-top: 10px;
         color: white;
     }
 
-        #loginText:hover {
-            margin-top: 10px;
-            color: black;
-        }
+    #loginText:hover {
+        margin-top: 10px;
+        color: black;
+    }
 
 
 
@@ -119,6 +119,50 @@
         text-decoration: none;
         cursor: pointer;
     }
+
+
+    #scanCardBox {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgb(0,0,0); /* Fallback color */
+        background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    }
+
+    #scanCardBox-content {
+        background-color: #fefefe;
+        margin: 15% auto; /* 15% from the top and centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 350px; /* Could be more or less, depending on screen size */
+    }
+
+    #scanCardBox-close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    #scanCardSelect {
+        width: 350px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    #scanCardButton {
+        width: 350px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 5px;
+
+    }
+
 
     #statusFooter {
         height: 30px;
@@ -217,34 +261,31 @@
         padding-bottom: 4px;
         padding-left: 10px;
         height: 30px;
+        white-space: nowrap;
     }
 
     .inputBarIcon {
-        display: inline-block;
-        float: left;
+ 
         height: 25px;
         margin-top: 3px;
         margin-left: 6px;
         margin-right: 6px;
     }
     .inputBarButton {
-        display: inline-block;
-        float: left;
+
         height: 25px;
         margin-top: 3px;
         margin-left: 6px;
         margin-right: 6px;
     }
     .inputBarText {
-        float: left;
-        display: inline-block;
+
         margin-top: 6px;
         margin-left: 6px;
         margin-right: 6px;
     }
     .inputBarInput {
-        float: left;
-        display: inline-block;
+
         margin-top: 6px;
         margin-left: 6px;
         margin-right: 6px;
@@ -274,6 +315,9 @@
             xmlHttpRequestPrefix = 'https://localhost:9000/api/';
         else
             xmlHttpRequestPrefix = 'https://' + window.location.host + '/api/';
+
+        //Preload Images
+        scanCardIcon.src = waitStatusImg.src;
 
          $('#homeBody').show();
 
@@ -320,7 +364,7 @@
 
                  case 'usersTab':
                      $('#usersBody').show();
-                     listUserPerms();
+                     //listUserPerms();
                      break;
 
              }
@@ -334,6 +378,10 @@
     window.onclick = function (event) {
         if (event.target == loginBox) {
             loginBox.style.display = "none";
+        }
+        if (event.target == scanCardBox) {
+            scanCardBox.style.display = "none";
+            clearInterval(scanCardInterval);
         }
     }
 
@@ -1054,6 +1102,67 @@
 <!-- Users Page Script-->
 <script>
 
+    var scanCardInterval;
+    var startIndex = 0;
+
+    function startScanCardBox() {
+        scanCardBox.style.display = 'block'; 
+        startIndex = 0;
+        scanCardInterval = setInterval(singleCardScan, 1000);
+        scanCardIcon.src = waitStatusImg.src;
+        scanCardSelect.innerHTML = '';
+        
+    }
+
+    function selectScanCard() {
+        scanCardBox.style.display = "none";
+        clearInterval(scanCardInterval);
+        var cardId = $('#scanCardSelect').children("option:selected").val();
+        if ((typeof cardId) == 'string') {
+            $('#newUserCardInput').val(cardId);
+        }
+
+    }
+    
+    function singleCardScan() {
+        $.ajax({
+            type: "POST", //GET, POST, PUT
+            url: xmlHttpRequestPrefix + 'users/scancards',  //the url to call
+            contentType: 'application/json; charset=utf-8',
+            beforeSend: function (xhr) {   //Set token here
+                xhr.setRequestHeader("Authorization", 'Bearer ' + globalApiKey);
+            }
+        }).done(function (response) {
+            //Response ok. process reuslt
+            if (response.hasOwnProperty('scanResults')) {
+
+                var endIndex = response.scanResults.length;
+
+                for (i = startIndex; i < endIndex; i++) {
+                    var cardNumber = response.scanResults[i].cardNumber;
+                    var controllerSerial = response.scanResults[i].cardNumber;
+                    var doorIndex = response.scanResults[i].doorIndex;
+                    var doorName = response.scanResults[i].doorName;
+
+                    var newOptionHtml = '<option value ="' + cardNumber + '"> Door: ' + doorName + '; Card: ' + cardNumber + '</option>';
+
+                    $('#scanCardSelect').append(newOptionHtml);
+                }
+
+                startIndex = endIndex;
+            }
+
+            $('#statusBarText').text(response['message']);
+            scanCardIcon.src = waitStatusImg.src;
+
+        }).fail(function (err) {
+            $('#statusBarText').text('API Failure');
+            scanCardIcon.src = errorStatusImg.src;
+        });
+
+    }
+
+
 
 </script>
 
@@ -1141,9 +1250,7 @@
     }
 
 
-    function loadAPiKeyList() {
 
-    }
 </script>
 
 
@@ -1300,16 +1407,13 @@
 
         <div class="inputBar">
             <span class="inputBarText">Card ID: </span><input class="inputBarInput" type="text" id="newUserCardInput" />
-            <button type="button" class="inputBarButton" onclick="scanUser();">Scan for Card</button>
+            <button type="button" class="inputBarButton" onclick="startScanCardBox();">Scan for Card</button>
             <span class="inputBarText">User Name: </span><input class="inputBarInput" type="text" id="newUserNameInput" />
             <button type="button" class="inputBarButton" onclick="createUser();">Create New User</button>
 
 
         </div>
     </div>
-
-
-
 
 </div>
 
@@ -1333,6 +1437,15 @@
             <div style="vertical-align: middle; float:left" id="Response"></div>
         </div>
         <br /><br />
+    </div>
+</div>
+
+<div id="scanCardBox">
+    <!-- Data Storage for Login Prompt -->
+    <div id="scanCardBox-content">
+        <div style="height:22px"><div style="float: left; display: inline-block; height:22px; padding-top: 4px">Scanning for Cards:</div> <div style="display:inline-block; float:left"><img id="scanCardIcon" src="" /></div></div>
+        <select id="scanCardSelect" size="5"></select>
+        <button id="scanCardButton" type="button" onclick="selectScanCard();">Use This Card</button>
     </div>
 </div>
 

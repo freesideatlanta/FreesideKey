@@ -92,7 +92,7 @@ namespace WGToolKit
             Array.Copy(buf, offset, buf2, 0, 4);
             if (!BitConverter.IsLittleEndian)
                 Array.Reverse(buf2);
-            return BitConverter.ToUInt32(buf, 0);
+            return BitConverter.ToUInt32(buf2, 0);
         }
 
         public static void UInt32ToNet(UInt32 i, ref byte[] outBuff, int offset)
@@ -163,7 +163,7 @@ namespace WGToolKit
 
         //Helper Function to Get Door Number.
         //I really have no idea about the logic behind this. Ripped from WCCard
-        public static int getDoorFromRecordStatus(UInt16 cardno, byte status)
+        public static int getDoorFromRecordStatus(UInt32 cardno, byte status)
         {
             bool flag1 = false;
             bool flag2 = false;

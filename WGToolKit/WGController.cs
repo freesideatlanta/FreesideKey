@@ -65,6 +65,7 @@ namespace WGToolKit
         //Parse Record From Data String
         public static ControllerRecord ParseRecordFromWatch(byte[] recordPayload)
         {
+            String debugWatch = BitConverter.ToString(recordPayload).Replace("-", "");
             ControllerRecord newRecord = new ControllerRecord();
             //Response is by byte, 2 digit year, month, weekday, date, hour, min, seconds.
             //Ignore weekday.
@@ -86,22 +87,23 @@ namespace WGToolKit
             //I don't know why the record index is split across bytes but it is. I suspect that the high byte is a memory page number.
             //Look The original code was using 1 Indexed VB Strings and Concatenation To do this.
 
-            newRecord.recordIndex = (UInt32)(((UInt16)recordPayload[7]) + ((recordPayload[9] & 0x0F) << 8));
-            newRecord.cardID = (UInt16)(((UInt16)recordPayload[7]) + ((recordPayload[9] & 0xF0) << 4));
+            UInt32 lng1 = ((UInt32 )WGTools.NetToUInt16(recordPayload, 7) << 8) + (UInt32) (recordPayload[9] & 0x0F);
+            UInt32 lng2 = ((UInt32)WGTools.NetToUInt16(recordPayload, 10) << 8) + (UInt32) ((recordPayload[9] & 0xF0) >> 4);
+            
 
-
+            
             //Check if Card Data Available
             if ((WGTools.NetToUInt32(recordPayload, 12) != 0xFFFFFFFF) && (WGTools.NetToUInt32(recordPayload, 16) == 0xFFFFFFFF))
             {
+                //Lost of Door Status Stuff HEre. Ignore it for now
                 return null;
             }
-
 
             newRecord.responseType = recordPayload[25];
 
             newRecord.is10Digit = false;
             //Read In Card Data
-            if (newRecord.responseType != 0)
+            if ((newRecord.responseType & 0x04) > 0)
             {
                 newRecord.cardID = WGTools.NetToUInt32(recordPayload, 12);
                 newRecord.statusByte = recordPayload[20];
@@ -118,6 +120,8 @@ namespace WGToolKit
                 if ((newRecord.responseType & 1L) > 0)
                     newRecord.is10Digit = true;
 
+                return newRecord;
+
             }
             else
             {
@@ -130,10 +134,12 @@ namespace WGToolKit
                
                 if (newRecord.readDateTime == DateTime.MinValue)
                     return null;
+
+                return newRecord;
             }
 
-
-            return newRecord;
+            return null;
+            
         }
 
         //Records have 2x records per transaction
@@ -294,13 +300,13 @@ namespace WGToolKit
 
         public List<ControllerRecord> WatchRecords;
 
-        WGController()
+        public WGController()
         {
             Connection = new ConnectionInfo(60000);
             WatchRecords = new List<ControllerRecord>();
         }
 
-        WGController(UInt16 udpPort)
+        public WGController(UInt16 udpPort)
         {
             Connection = new ConnectionInfo(udpPort);
             WatchRecords = new List<ControllerRecord>();

@@ -30,6 +30,7 @@ namespace FreesideKeyService.FSLocalDb
 
 
         //Database Setup
+        #region Database Setup
         public static bool DeleteDB(out String ErrorMsg)
         {
             ErrorMsg = null;
@@ -334,8 +335,11 @@ namespace FreesideKeyService.FSLocalDb
             return true;
         }
 
+        #endregion
+
 
         //API Keys
+        #region Api Keys
         public class TokenResponse
         {
             public String userName;
@@ -519,8 +523,6 @@ namespace FreesideKeyService.FSLocalDb
         }
 
 
-
-
         public static TokenResponse GetApiToken(String UserName, String SID, out String ErrorMsg)
         {
             ErrorMsg = null;
@@ -577,8 +579,9 @@ namespace FreesideKeyService.FSLocalDb
 
         }
 
+        #endregion
 
-
+        //Controller Functions
         #region Controller Functions
         public static bool AddController(String controllerName, UInt16 controllerSerial, String door1Name, String door2Name, String door3Name, String door4Name, out String ErrorMsg)
         {
@@ -783,6 +786,10 @@ namespace FreesideKeyService.FSLocalDb
 
         #endregion
 
+
+
+        //Groups Management
+        #region GroupManagement
         /// <summary>
         /// Door Permission Description
         /// </summary>
@@ -963,7 +970,6 @@ namespace FreesideKeyService.FSLocalDb
             return true;
         }
 
-
         public static bool DeleteGroup(Int32 groupKey, out String ErrorMsg)
         {
             ErrorMsg = null;
@@ -998,6 +1004,50 @@ namespace FreesideKeyService.FSLocalDb
             return true;
         }
 
+
+
+        #endregion
+
+
+        public static String LookupDoorName(Int32 controllerSerial, Int32 doorIndex, out String ErrorMsg)
+        {
+            ErrorMsg = null;
+            if (doorIndex < 1 || doorIndex > 4)
+                return "Special Door";
+
+            try
+            {
+                SqlConnection connection = new SqlConnection($"Data Source=(LocalDB)\\.;AttachDBFileName={DB_FILE};Initial Catalog={DB_NAME};Integrated Security=True;");
+                connection.Open();
+                SqlCommand cmd;
+
+                //First Get all Groups
+                List<GroupSummary> groupList = new List<GroupSummary>();
+                
+                cmd = new SqlCommand(@"SELECT Door1Name, Door2Name, Door3Name, Door4Name FROM dbo.Controllers WHERE ControllerSN = @controllerSerial", connection);
+                cmd.Parameters.Add(new SqlParameter("controllerSerial", controllerSerial));
+                SqlDataReader rdr = cmd.ExecuteReader();
+
+                String doorName = "";
+
+                rdr.Read();
+
+                doorName = rdr.GetString(doorIndex-1);
+     
+                rdr.Close();
+                connection.Close();
+
+                return doorName;
+            }
+            catch (Exception e)
+            {
+                ErrorMsg = $"Lookup Door Name Failed. Reason: {e.Message}";
+                return null;
+            }
+
+
+
+        }
     }
 
 }

@@ -2,6 +2,9 @@
 
 using System.Collections.Generic;
 using System.Web.Http;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Threading;
 
 using Newtonsoft.Json.Linq;
 
@@ -15,11 +18,13 @@ namespace FreesideKeyService
     public class ApiKeyController : ApiController
     {
 
+
+
         [HttpPost]
         public JObject CreateApiKey([NakedBody] String rawData)
         {
 
-          
+
             JObject response = new JObject();
             String ErrorMsg;
 
@@ -39,16 +44,16 @@ namespace FreesideKeyService
             }
 
             //Check TokenID Format
-            if(request["tokenID"] == null || request["tokenID"].Value<String>() == null || request["tokenID"].Value<String>() == "" || request["tokenID"].Value<String>().Length > 64)
+            if (request["tokenID"] == null || request["tokenID"].Value<String>() == null || request["tokenID"].Value<String>() == "" || request["tokenID"].Value<String>().Length > 64)
             {
                 response["message"] = "Invalid TokenID";
                 return response;
             }
- 
+
             //Get Creator Username and Sid Based on APi Key
             KeyDbManager.TokenResponse creatorToken = KeyDbManager.LookupApiToken(creatorApiToken, out ErrorMsg);
 
-            if(creatorToken == null)
+            if (creatorToken == null)
             {
                 response["message"] = ErrorMsg;
                 return response;
@@ -100,7 +105,7 @@ namespace FreesideKeyService
 
             JObject response = new JObject();
 
-            if(ErrorMsg != null)
+            if (ErrorMsg != null)
             {
                 response["message"] = ErrorMsg;
                 response["apikeys"] = null;
@@ -111,6 +116,7 @@ namespace FreesideKeyService
             response["apiKeys"] = JToken.FromObject(tokenResp);
             return response;
         }
+
 
 
 
